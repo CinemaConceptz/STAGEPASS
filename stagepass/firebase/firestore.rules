@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(uid()));
+    }
+    function roles() {
+      return isSignedIn() ? userDoc().data.roles : [];
+    }
+    function isAdmin() {
+      return isSignedIn() && roles().hasAny(['admin']);
+    }
+
+    // PUBLIC READ: creator channels & public content
+    match /creators/{creatorId} {
+      allow read: if true;
+
+      // Client can only update limited profile fields for own creator
+      allow create: if isSignedIn() && request.resource.data.ownerUid == uid();
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == uid()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'displayName','bio','links','genres','location','bannerUrl','avatarUrl'
+        ]);
+      allow delete: if isAdmin();
+    }
+
+    match /content/{contentId} {
+      allow read: if resource.data.visibility == 'PUBLIC'
+        || (isSignedIn() && resource.data.ownerUid == uid())
+        || isAdmin();
+
+      // Client create only allowed as DRAFT/UPLOADED with safe fields
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == uid()
+        && request.resource.data.status in ['DRAFT', 'UPLOADED']
+        && request.resource.data.visibility in ['PUBLIC','UNLISTED','PRIVATE']
+        && request.resource.data.type in ['VIDEO','AUDIO','MIX','EPISODE','CLIP']
+        && request.resource.data.keys().hasOnly([
+          'ownerUid','creatorId','type','status','visibility','title','description','tags',
+          'objectPath','createdAt'
+        ]);
+
+      // Client updates only metadata; never status/playback/manifests
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == uid()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'title','description','tags','visibility','chapters'
+        ]);
+
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && (userId == uid() || isAdmin());
+      allow create: if isSignedIn() && userId == uid();
+      allow update: if isSignedIn() && userId == uid()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'displayName','photoUrl','creatorId','preferences'
+        ]);
+      allow delete: if isAdmin();
+    }
+
+    match /follows/{userId}/following/{creatorId} {
+      allow read: if isSignedIn() && userId == uid();
+      allow create, delete: if isSignedIn() && userId == uid();
+      allow update: if false;
+    }
+
+    match /reports/{reportId} {
+      allow create: if true; // allow anonymous reporting; rate-limit at API/WAF
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /moderationActions/{actionId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.targetOwnerUid == uid());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /notifications/{userId}/items/{notifId} {
+      allow read: if isSignedIn() && userId == uid();
+      allow create: if false; // created by backend
+      allow update: if isSignedIn() && userId == uid()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['readAt']);
+      allow delete: if isSignedIn() && userId == uid();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if false; // backend only
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

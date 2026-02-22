@@ -1,0 +1,356 @@
+openapi: 3.0.3
+info:
+  title: STAGEPASS API
+  version: 1.0.0
+servers:
+  - url: https://api.stagepass.example.com
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        error: { type: string }
+        code: { type: string }
+        requestId: { type: string }
+
+    Creator:
+      type: object
+      properties:
+        creatorId: { type: string }
+        slug: { type: string }
+        displayName: { type: string }
+        creatorType:
+          type: string
+          enum: [DJ_RADIO, MUSIC, FILM, BUSINESS, GAMING]
+        genres:
+          type: array
+          items: { type: string }
+        verified: { type: boolean }
+
+    Content:
+      type: object
+      properties:
+        contentId: { type: string }
+        ownerUid: { type: string }
+        creatorId: { type: string }
+        type:
+          type: string
+          enum: [VIDEO, AUDIO, MIX, CLIP, EPISODE]
+        status:
+          type: string
+          enum: [DRAFT, UPLOADED, PROCESSING, READY, FAILED, REMOVED]
+        visibility:
+          type: string
+          enum: [PUBLIC, UNLISTED, PRIVATE]
+        title: { type: string }
+        description: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        createdAt: { type: string }
+        playback:
+          type: object
+          properties:
+            hlsUrl: { type: string }
+            dashUrl: { type: string }
+            posterUrl: { type: string }
+        audio:
+          type: object
+          properties:
+            audioOnlyUrl: { type: string }
+            waveformUrl: { type: string }
+
+    SignedUploadRequest:
+      type: object
+      required: [filename, contentType, sizeBytes, mediaType]
+      properties:
+        filename: { type: string }
+        contentType: { type: string }
+        sizeBytes: { type: integer }
+        mediaType:
+          type: string
+          enum: [VIDEO, AUDIO]
+
+    SignedUploadResponse:
+      type: object
+      properties:
+        uploadUrl: { type: string }
+        objectPath: { type: string }
+        expiresAt: { type: string }
+
+    CreateContentRequest:
+      type: object
+      required: [type, objectPath, title]
+      properties:
+        type:
+          type: string
+          enum: [VIDEO, AUDIO, MIX, EPISODE]
+        objectPath: { type: string }
+        title: { type: string }
+        description: { type: string }
+        visibility:
+          type: string
+          enum: [PUBLIC, UNLISTED, PRIVATE]
+        tags:
+          type: array
+          items: { type: string }
+
+    FeedResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Content" }
+        nextCursor: { type: string }
+
+    ButlerRequest:
+      type: object
+      required: [inputMode, text]
+      properties:
+        inputMode:
+          type: string
+          enum: [TEXT, VOICE]
+        text: { type: string }
+        locale: { type: string }
+        context:
+          type: object
+          properties:
+            page: { type: string }
+            creatorId: { type: string }
+            contentId: { type: string }
+
+    ButlerResponse:
+      type: object
+      properties:
+        speechText: { type: string }
+        uiText: { type: string }
+        emotion:
+          type: string
+          enum: [FOCUSED, EXCITED, CALM, ANALYTICAL, CONCERNED]
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [NAVIGATE, SEARCH, START_UPLOAD, PUBLISH_CONTENT, CREATE_LIVE, OPEN_RADIO, EXPLAIN_VISIBILITY]
+              payload: { type: object }
+
+paths:
+  /health:
+    get:
+      security: []
+      responses:
+        "200":
+          description: OK
+
+  /me:
+    get:
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uid: { type: string }
+                  creatorId: { type: string }
+                  roles:
+                    type: array
+                    items: { type: string }
+
+  /creators:
+    post:
+      description: Create creator channel from onboarding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slug, displayName, creatorType]
+              properties:
+                slug: { type: string }
+                displayName: { type: string }
+                creatorType:
+                  type: string
+                  enum: [DJ_RADIO, MUSIC, FILM, BUSINESS, GAMING]
+      responses:
+        "200":
+          description: Creator created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Creator" }
+
+  /creators/{slug}:
+    get:
+      security: []
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Creator channel
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Creator" }
+
+  /content/signed-upload:
+    post:
+      description: Get signed upload URL (GCS)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignedUploadRequest" }
+      responses:
+        "200":
+          description: Signed upload info
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SignedUploadResponse" }
+
+  /content:
+    post:
+      description: Create content record and enqueue processing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateContentRequest" }
+      responses:
+        "200":
+          description: Content created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Content" }
+
+  /content/{id}:
+    get:
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Content
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Content" }
+
+  /feed/following:
+    get:
+      security: []
+      parameters:
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [NEWEST, MOST_DISCUSSED, TRENDING]
+          required: false
+        - in: query
+          name: cursor
+          schema: { type: string }
+          required: false
+      responses:
+        "200":
+          description: Following feed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeedResponse" }
+
+  /live/session:
+    post:
+      description: Create live session (returns ingest + playback info)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                visibility:
+                  type: string
+                  enum: [PUBLIC, UNLISTED, PRIVATE]
+      responses:
+        "200":
+          description: Live session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channelId: { type: string }
+                  streamId: { type: string }
+                  ingestRtmpUrl: { type: string }
+                  streamKey: { type: string }
+                  playbackHlsUrl: { type: string }
+
+  /radio/stations/global:
+    get:
+      security: []
+      responses:
+        "200":
+          description: Global station metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stationId: { type: string }
+                  nowPlaying: { type: object }
+                  schedule:
+                    type: array
+                    items: { type: object }
+
+  /moderation/report:
+    post:
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetType, targetId, reason]
+              properties:
+                targetType:
+                  type: string
+                  enum: [CONTENT, CREATOR, MESSAGE]
+                targetId: { type: string }
+                reason: { type: string }
+                details: { type: string }
+      responses:
+        "200":
+          description: Report submitted
+
+  /butler/resolve:
+    post:
+      description: Resolve user intent into actions + speech + emotion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ButlerRequest" }
+      responses:
+        "200":
+          description: Butler response
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ButlerResponse" }
