@@ -87,7 +87,7 @@ export default function Layout({ children }) {
         </div>
 
         {/* AI Butler - Floating */}
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-10 right-10 z-[100]">
           <ButlerChat />
         </div>
       </main>
