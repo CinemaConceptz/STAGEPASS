@@ -97,3 +97,4 @@ stagepass/apps/web/node_modules/@next/swc-linux-arm64-musl/next-swc.linux-arm64-
 *.env.*
 stagepass.tar.gz
 frontend/public/stagepass.tar.gz
+stagepass_phase1.tar.gz
