@@ -6,5 +6,5 @@ python-multipart==0.0.6
 python-jose==3.3.0
 passlib==1.7.4
 bcrypt==4.0.1
-emergentintegrations==1.0.0
+emergentintegrations
 python-dotenv==1.0.1
