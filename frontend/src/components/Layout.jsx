@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Radio, Mic2, Tv, Users, Settings, LogOut, Upload, Menu, X } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { Button } from './button';
+import { Button } from './ui/button';
 import { Toaster } from 'sonner';
 import ButlerChat from './ButlerChat';
 
