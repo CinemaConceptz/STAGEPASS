@@ -29,7 +29,14 @@ class GeminiService:
             
             # Send message
             response = await chat.send_message(user_msg)
-            return response.text
+            
+            # Handle response type
+            if hasattr(response, 'text'):
+                return response.text
+            elif isinstance(response, str):
+                return response
+            else:
+                return str(response)
             
         except Exception as e:
             print(f"Gemini Error: {str(e)}")
