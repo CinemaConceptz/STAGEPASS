@@ -78,7 +78,8 @@ if ! gcloud storage buckets describe gs://$BUCKET_NAME &> /dev/null; then
 else
   echo "⚠️ Bucket already exists"
 fi
-gcloud storage buckets update gs://$BUCKET_NAME --versioning-enabled
+# Fixed command flag: --versioning-enabled -> --versioning
+gcloud storage buckets update gs://$BUCKET_NAME --versioning
 
 # 5. Prepare Terraform
 echo -e "${BLUE}🏗 Preparing Terraform...${NC}"
