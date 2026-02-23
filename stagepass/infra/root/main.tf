@@ -57,8 +57,7 @@ module "iam" {
   source     = "../modules/iam"
   project_id = var.project_id
   
-  # References to buckets (created in storage module)
-  # In a real implementation, you would output bucket names from storage module
+  # Pass bucket names as simple strings
   raw_bucket_name       = "stagepass-raw-media-${var.env}"
   processed_bucket_name = "stagepass-processed-media-${var.env}"
   live_bucket_name      = "stagepass-live-output-${var.env}"
@@ -81,19 +80,12 @@ module "cloud_run_api" {
     SIGNED_URL_KEY   = "SIGNED_URL_KEY"
     BUTLER_SYSTEM_PROMPT = "BUTLER_SYSTEM_PROMPT"
   }
-  # service_account_email = module.iam.api_sa_email
   allow_unauthenticated = true
 }
 
-module "media_cdn" {
-  source     = "../modules/media_cdn"
-  project_id = var.project_id
-  region     = var.region
-  # origin_bucket = module.storage.processed_bucket
-}
-
-module "budgets" {
-  source     = "../modules/budgets"
-  project_id = var.project_id
-  amount_usd = var.budget_amount_usd
-}
+# Commented out budget due to permission complexity (requires billing account admin)
+# module "budgets" {
+#   source     = "../modules/budgets"
+#   project_id = var.project_id
+#   amount_usd = var.budget_amount_usd
+# }
