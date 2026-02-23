@@ -1,9 +1,14 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import FeedSort from "@/components/stagepass/FeedSort";
 import ContentCard from "@/components/stagepass/ContentCard";
 import Button from "@/components/ui/Button";
 
 export default function HomePage() {
+  const [sort, setSort] = useState<"NEWEST" | "MOST_DISCUSSED" | "TRENDING">("NEWEST");
+
   return (
     <div className="space-y-12">
       {/* Hero / Premiere Banner */}
@@ -36,7 +41,7 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight">Your Feed</h2>
           {/* Feed Sort Component */}
-          <FeedSort value="NEWEST" onChange={() => {}} />
+          <FeedSort value={sort} onChange={setSort} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
