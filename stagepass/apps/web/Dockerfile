@@ -20,6 +20,7 @@ WORKDIR /app
 
 # Copy built artifacts
 COPY --from=builder /app/.next ./.next
+# Only copy public if it exists (using wildcard hack or just ensure it exists)
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
