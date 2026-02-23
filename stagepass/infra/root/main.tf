@@ -4,46 +4,46 @@ provider "google" {
 }
 
 module "project_services" {
-  source     = "../modules/project_services"
+  source     = "../../modules/project_services"
   project_id = var.project_id
   services   = var.enabled_services
 }
 
 module "artifact_registry" {
-  source     = "../modules/artifact_registry"
+  source     = "../../modules/artifact_registry"
   project_id = var.project_id
   region     = var.region
   repos      = ["stagepass-web", "stagepass-api", "stagepass-workers"]
 }
 
 module "storage" {
-  source     = "../modules/storage"
+  source     = "../../modules/storage"
   project_id = var.project_id
   env        = var.env
   region     = var.region
 }
 
 module "firestore" {
-  source     = "../modules/firestore"
+  source     = "../../modules/firestore"
   project_id = var.project_id
   location   = var.location
 }
 
 module "pubsub" {
-  source     = "../modules/pubsub"
+  source     = "../../modules/pubsub"
   project_id = var.project_id
   topics     = ["content-process", "live-events", "moderation-events", "notifications"]
 }
 
 module "tasks" {
-  source     = "../modules/tasks"
+  source     = "../../modules/tasks"
   project_id = var.project_id
   region     = var.region
   queues     = ["transcode-queue", "waveform-queue", "notify-queue"]
 }
 
 module "secret_manager" {
-  source     = "../modules/secret_manager"
+  source     = "../../modules/secret_manager"
   project_id = var.project_id
   secrets = [
     "JWT_SIGNING_KEY",
@@ -54,7 +54,7 @@ module "secret_manager" {
 }
 
 module "iam" {
-  source     = "../modules/iam"
+  source     = "../../modules/iam"
   project_id = var.project_id
   
   raw_bucket_name       = "stagepass-raw-media-${var.env}"
@@ -63,7 +63,7 @@ module "iam" {
 }
 
 module "cloud_run_api" {
-  source      = "../modules/cloud_run"
+  source      = "../../modules/cloud_run"
   project_id  = var.project_id
   region      = var.region
   name        = "stagepass-api"
@@ -83,7 +83,7 @@ module "cloud_run_api" {
 }
 
 module "media_cdn" {
-  source     = "../modules/media_cdn"
+  source     = "../../modules/media_cdn"
   project_id = var.project_id
   region     = var.region
   # origin_bucket = module.storage.processed_bucket
