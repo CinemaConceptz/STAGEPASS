@@ -17,7 +17,11 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "framer-motion": "^11.2.10",
-    "tailwind-merge": "^2.3.0"
+    "tailwind-merge": "^2.3.0",
+    "react-google-drive-picker": "^1.1.0",
+    "googleapis": "^126.0.1",
+    "@google-cloud/storage": "^7.7.0",
+    "@google-cloud/video-transcoder": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
