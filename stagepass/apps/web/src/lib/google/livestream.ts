@@ -1,4 +1,4 @@
-import { LivestreamServiceClient } from "@google-cloud/live-stream";
+import { LivestreamServiceClient } from "@google-cloud/video-live-stream";
 
 const client = new LivestreamServiceClient();
 
