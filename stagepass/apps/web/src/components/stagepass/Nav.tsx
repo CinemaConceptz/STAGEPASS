@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const NavLink = ({ href, label }: { href: string; label: string }) => (
   <Link
@@ -14,7 +15,20 @@ export default function Nav() {
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-stage-bg/80 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 h-16">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="h-3 w-3 rounded-full bg-stage-mint shadow-glowMint group-hover:scale-110 transition-transform" />
+          {/* Logo - Requires 'logo.jpg' in public folder */}
+          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-stage-mint/20 shadow-glowMint group-hover:scale-105 transition-transform">
+             <Image 
+               src="/logo.jpg" 
+               alt="StagePass" 
+               fill
+               className="object-cover"
+               onError={(e) => {
+                 // Fallback if image missing
+                 e.currentTarget.style.display = "none";
+               }}
+             />
+             <div className="absolute inset-0 bg-stage-mint/10 hidden group-hover:block" />
+          </div>
           <span className="text-lg font-bold tracking-wider">
             STAGE<span className="text-stage-indigo">PASS</span>
           </span>
