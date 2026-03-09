@@ -1,5 +1,6 @@
 import "./globals.css";
 import Nav from "@/components/stagepass/Nav";
+import Footer from "@/components/stagepass/Footer";
 import ButlerDock from "@/components/butler/ButlerDock";
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -11,16 +12,13 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-stage-bg text-stage-text font-sans antialiased">
+      <body className="min-h-screen bg-stage-bg text-stage-text font-sans antialiased flex flex-col">
         <AuthProvider>
-          <div className="relative min-h-screen flex flex-col">
-            <Nav />
-            <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8">
-              {children}
-            </main>
+          <Nav />
+          <div className="flex-1">
+            {children}
           </div>
-
-          {/* Global Butler (Encore) */}
+          <Footer />
           <ButlerDock />
         </AuthProvider>
       </body>
