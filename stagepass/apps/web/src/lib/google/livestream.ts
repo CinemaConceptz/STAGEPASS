@@ -70,7 +70,6 @@ export async function createLiveChannel(channelId: string) {
           fileName: "manifest.m3u8",
           type: "HLS",
           muxStreams: ["mux-video"],
-          // maxPlaylistSegments removed to fix TS error
         },
       ],
     },
