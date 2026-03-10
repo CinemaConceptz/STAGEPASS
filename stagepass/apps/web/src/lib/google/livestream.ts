@@ -12,17 +12,20 @@ export async function createLiveChannel(channelId: string) {
 
   // 1. Create Input (RTMP Ingest)
   const inputId = `input-${channelId}`;
-  const [inputOperation] = await client.createInput({
+  
+  // Use explicit response variable to avoid TS destructuring error
+  const createInputResponse = await client.createInput({
     parent,
     inputId,
     input: {
       type: "RTMP_PUSH",
     },
   });
+  const inputOperation = createInputResponse[0];
   const [inputResponse] = await inputOperation.promise();
 
   // 2. Create Channel (Processing)
-  const [channelOperation] = await client.createChannel({
+  const createChannelResponse = await client.createChannel({
     parent,
     channelId,
     channel: {
@@ -74,6 +77,7 @@ export async function createLiveChannel(channelId: string) {
     },
   });
   
+  const channelOperation = createChannelResponse[0];
   const [channelResponse] = await channelOperation.promise();
   
   return {
@@ -84,12 +88,14 @@ export async function createLiveChannel(channelId: string) {
 
 export async function startChannel(channelId: string) {
   const name = client.channelPath(PROJECT_ID!, LOCATION, channelId);
-  const [operation] = await client.startChannel({ name });
+  const startResponse = await client.startChannel({ name });
+  const operation = startResponse[0];
   await operation.promise();
 }
 
 export async function stopChannel(channelId: string) {
   const name = client.channelPath(PROJECT_ID!, LOCATION, channelId);
-  const [operation] = await client.stopChannel({ name });
+  const stopResponse = await client.stopChannel({ name });
+  const operation = stopResponse[0];
   await operation.promise();
 }
