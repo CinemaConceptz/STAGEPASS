@@ -13,7 +13,6 @@ export async function createLiveChannel(channelId: string) {
   // 1. Create Input (RTMP Ingest)
   const inputId = `input-${channelId}`;
   
-  // Use explicit response variable to avoid TS destructuring error
   const createInputResponse = await client.createInput({
     parent,
     inputId,
@@ -71,7 +70,7 @@ export async function createLiveChannel(channelId: string) {
           fileName: "manifest.m3u8",
           type: "HLS",
           muxStreams: ["mux-video"],
-          maxPlaylistSegments: 5,
+          // maxPlaylistSegments removed to fix TS error
         },
       ],
     },
@@ -82,7 +81,7 @@ export async function createLiveChannel(channelId: string) {
   
   return {
     channelName: channelResponse.name,
-    inputUri: inputResponse.uri, // This is the RTMP URL for OBS
+    inputUri: inputResponse.uri, 
   };
 }
 
