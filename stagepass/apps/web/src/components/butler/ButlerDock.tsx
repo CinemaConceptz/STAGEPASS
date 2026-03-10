@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Mic, Send, X, Sparkles, ChevronDown } from "lucide-react";
 import { useButler } from "./useButler";
 import { clsx } from "clsx";
+import { useState } from "react";
 
 export default function ButlerDock() {
   const { isOpen, toggle, emotion, messages, sendMessage, isListening, startListening } = useButler();
@@ -23,7 +24,7 @@ export default function ButlerDock() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="w-[360px] md:w-[400px] h-[500px] bg-[#0A0A0A]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="w-[360px] md:w-[400px] h-[500px] bg-stage-bg/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-white/5">
@@ -32,7 +33,7 @@ export default function ButlerDock() {
                   "h-2 w-2 rounded-full shadow-glowMint animate-pulse",
                   emotion === "EXCITED" ? "bg-stage-mint" : "bg-stage-indigo"
                 )} />
-                <span className="font-bold text-sm tracking-widest">ENCORE</span>
+                <span className="font-bold text-sm tracking-widest text-white">ENCORE</span>
               </div>
               <button onClick={toggle} className="text-white/50 hover:text-white">
                 <ChevronDown size={20} />
@@ -49,8 +50,8 @@ export default function ButlerDock() {
                   <div className={clsx(
                     "px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
                     msg.role === "user" 
-                      ? "bg-stage-indigo text-white rounded-br-sm" 
-                      : "bg-stage-panel border border-white/10 text-gray-200 rounded-bl-sm"
+                      ? "bg-stage-indigo text-white rounded-br-sm shadow-glowIndigo" 
+                      : "bg-stage-panel border border-white/10 text-white rounded-bl-sm"
                   )}>
                     {msg.text}
                   </div>
@@ -111,4 +112,3 @@ export default function ButlerDock() {
     </div>
   );
 }
-import { useState } from "react";
