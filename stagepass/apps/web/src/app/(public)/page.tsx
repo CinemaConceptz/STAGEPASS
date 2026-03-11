@@ -1,17 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
 import FeedSort from "@/components/stagepass/FeedSort";
 import ContentCard from "@/components/stagepass/ContentCard";
 import Button from "@/components/ui/Button";
+import { getRecentContent, ContentItem } from "@/lib/firebase/firestore";
 
 export default function HomePage() {
   const [sort, setSort] = useState<"NEWEST" | "MOST_DISCUSSED" | "TRENDING">("NEWEST");
+  const [feed, setFeed] = useState<ContentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const data = await getRecentContent();
+      setFeed(data);
+      setLoading(false);
+    }
+    load();
+  }, []);
 
   return (
     <div className="space-y-12">
-      {/* Hero / Premiere Banner */}
+      {/* Hero */}
       <div className="relative overflow-hidden rounded-3xl bg-stage-panel border border-white/10 p-8 md:p-12">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-stage-indigo/20 to-transparent pointer-events-none" />
         <div className="relative z-10 max-w-2xl space-y-6">
@@ -26,9 +38,11 @@ export default function HomePage() {
             Experience the future of sound. Join 45,000 others in the world's first fully immersive digital concert.
           </p>
           <div className="flex gap-4 pt-2">
-            <Button variant="primary" size="lg" className="rounded-full px-8">
-              Watch Premiere
-            </Button>
+            <Link href="/live">
+              <Button variant="primary" size="lg" className="rounded-full px-8">
+                Watch Premiere
+              </Button>
+            </Link>
             <Button variant="secondary" size="lg" className="rounded-full px-8">
               + Add to List
             </Button>
@@ -40,23 +54,29 @@ export default function HomePage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight">Your Feed</h2>
-          {/* Feed Sort Component */}
           <FeedSort value={sort} onChange={setSort} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Mock Data */}
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <ContentCard
-              key={i}
-              id={`content-${i}`}
-              title={i % 2 === 0 ? "Neon Nights: Live Set from Tokyo" : "The Future of Synthwave"}
-              type={i % 3 === 0 ? "LIVE" : "VIDEO"}
-              creator={{ slug: "dj-cyber", name: "DJ Cyberpunk" }}
-              thumbnail={`https://source.unsplash.com/random/800x450?concert&sig=${i}`} 
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12 text-stage-mutetext">Loading Stage...</div>
+        ) : feed.length === 0 ? (
+          <div className="text-center py-12 text-stage-mutetext border border-dashed border-white/10 rounded-xl">
+            No premieres yet. Be the first to upload in the Studio!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {feed.map((item) => (
+              <ContentCard
+                key={item.id}
+                id={item.id}
+                title={item.title}
+                type={item.type}
+                creator={{ slug: item.creatorSlug || "user", name: item.creatorName || "Creator" }}
+                thumbnail={item.thumbnail} 
+              />
+            ))}
+          </div>
+        )}
         
         <div className="flex justify-center pt-8">
           <Button variant="ghost">Load More</Button>
