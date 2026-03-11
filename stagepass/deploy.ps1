@@ -1,17 +1,20 @@
 # --- Configuration ---
-# CAREFUL: Use the ID with the suffix if that is your active one!
-$Env:PROJECT_ID = "stagepass-webapp-0222-8ce6e" 
+# Hardcoded for your convenience
+$Env:PROJECT_ID = "stagepass-live-v1"
 $Env:REGION = "us-central1"
 
-# Keys (PASTE YOURS HERE)
-$Env:FIREBASE_API_KEY = "AIzaSy..." 
-$Env:FIREBASE_AUTH_DOMAIN = "stagepass-webapp-0222.firebaseapp.com"
-$Env:FIREBASE_PROJECT_ID = "stagepass-webapp-0222"
-$Env:FIREBASE_STORAGE_BUCKET = "stagepass-webapp-0222.appspot.com"
-$Env:FIREBASE_MESSAGING_SENDER_ID = "YOUR_SENDER_ID"
-$Env:FIREBASE_APP_ID = "YOUR_APP_ID"
-$Env:GOOGLE_API_KEY = "AIzaSy..."
-$Env:GOOGLE_CLIENT_ID = "YOUR_CLIENT_ID.apps.googleusercontent.com"
+# Keys (Pre-filled)
+$Env:FIREBASE_API_KEY = "AIzaSyC88kuIJXBFt9w5Mmpu8t3lnSrSz2X3Kd0" 
+$Env:FIREBASE_AUTH_DOMAIN = "stagepass-live-v1.firebaseapp.com"
+$Env:FIREBASE_PROJECT_ID = "stagepass-live-v1"
+$Env:FIREBASE_STORAGE_BUCKET = "stagepass-live-v1.firebasestorage.app"
+$Env:FIREBASE_MESSAGING_SENDER_ID = "1005750289786"
+$Env:FIREBASE_APP_ID = "G-3D0F10FZJ4"
+
+# Google Drive Picker Keys (Fill these if you have them, otherwise leave blank or use same)
+# Assuming same API Key for now if enabled
+$Env:GOOGLE_API_KEY = "AIzaSyC88kuIJXBFt9w5Mmpu8t3lnSrSz2X3Kd0" 
+$Env:GOOGLE_CLIENT_ID = "1005750289786-PLACEHOLDER.apps.googleusercontent.com" # You need your OAuth Client ID here
 
 # --- Logic ---
 Write-Host "[START] Deploying to $Env:PROJECT_ID" -ForegroundColor Cyan
@@ -26,6 +29,7 @@ elseif (Test-Path "apps\web") { Set-Location "apps\web" }
 
 $ImageTag = "$Env:REGION-docker.pkg.dev/$Env:PROJECT_ID/stagepass-web/web:latest"
 
+# Note: We pass variables to cloudbuild.yaml which then passes them to Docker
 gcloud builds submit --config cloudbuild.yaml `
   --substitutions=_IMAGE_TAG=$ImageTag,_NEXT_PUBLIC_FIREBASE_API_KEY=$Env:FIREBASE_API_KEY,_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$Env:FIREBASE_AUTH_DOMAIN,_NEXT_PUBLIC_FIREBASE_PROJECT_ID=$Env:FIREBASE_PROJECT_ID,_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$Env:FIREBASE_STORAGE_BUCKET,_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$Env:FIREBASE_MESSAGING_SENDER_ID,_NEXT_PUBLIC_FIREBASE_APP_ID=$Env:FIREBASE_APP_ID,_NEXT_PUBLIC_GOOGLE_API_KEY=$Env:GOOGLE_API_KEY,_NEXT_PUBLIC_GOOGLE_CLIENT_ID=$Env:GOOGLE_CLIENT_ID `
   .

@@ -152,3 +152,7 @@ frontend/public/stagepass_env_fix_v2.tar.gz
 stagepass_env_fix_v2.tar.gz
 stagepass_rescue.tar.gz
 frontend/public/stagepass_rescue.tar.gz
+stagepass_nav_auth_fix.tar.gz
+frontend/public/stagepass_nav_auth_fix.tar.gz
+frontend/public/stagepass_interactive.tar.gz
+stagepass_interactive.tar.gz
