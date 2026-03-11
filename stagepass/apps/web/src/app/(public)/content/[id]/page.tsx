@@ -8,6 +8,11 @@ import Button from "@/components/ui/Button";
 export default function ContentPage({ params }: { params: { id: string } }) {
   const [content, setContent] = useState<ContentItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [following, setFollowing] = useState(false);
+  const [chatMsg, setChatMsg] = useState("");
+  const [chatLog, setChatLog] = useState<{user:string, text:string}[]>([
+    {user: "System", text: "Welcome to the premiere."}
+  ]);
 
   useEffect(() => {
     getContentById(params.id).then((data) => {
@@ -15,6 +20,18 @@ export default function ContentPage({ params }: { params: { id: string } }) {
       setLoading(false);
     });
   }, [params.id]);
+
+  const handleFollow = () => {
+    setFollowing(!following);
+    alert(following ? "Unfollowed" : "Followed!");
+  };
+
+  const handleSendChat = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && chatMsg.trim()) {
+      setChatLog(prev => [...prev, { user: "You", text: chatMsg }]);
+      setChatMsg("");
+    }
+  };
 
   if (loading) return <div className="p-12 text-center">Loading Premiere...</div>;
   if (!content) return <div className="p-12 text-center">Content not found.</div>;
@@ -33,8 +50,12 @@ export default function ContentPage({ params }: { params: { id: string } }) {
                  <p className="text-xs text-stage-mutetext">Creator</p>
                </div>
              </div>
-             <Button variant="primary" className="rounded-full shadow-glowIndigo">
-               Follow
+             <Button 
+               variant={following ? "secondary" : "primary"} 
+               className="rounded-full shadow-glowIndigo"
+               onClick={handleFollow}
+             >
+               {following ? "Following" : "Follow"}
              </Button>
           </div>
           <p className="mt-4 text-stage-mutetext leading-relaxed">
@@ -45,11 +66,21 @@ export default function ContentPage({ params }: { params: { id: string } }) {
       
       <div className="space-y-4">
         <h3 className="font-bold text-lg">Live Chat</h3>
-        <div className="h-[400px] bg-stage-panel rounded-xl border border-white/10 p-4 flex flex-col justify-end">
-           <div className="space-y-2 mb-4">
-             <p className="text-sm"><span className="text-stage-mint font-bold">System:</span> Welcome to the premiere.</p>
+        <div className="h-[400px] bg-stage-panel rounded-xl border border-white/10 p-4 flex flex-col justify-between">
+           <div className="flex-1 overflow-y-auto space-y-2 mb-4 pr-2">
+             {chatLog.map((msg, i) => (
+               <p key={i} className="text-sm">
+                 <span className="text-stage-mint font-bold">{msg.user}:</span> {msg.text}
+               </p>
+             ))}
            </div>
-           <input className="bg-black/30 w-full p-2 rounded text-sm border border-white/10" placeholder="Say something..." />
+           <input 
+             className="bg-black/30 w-full p-2 rounded text-sm border border-white/10 text-white focus:border-stage-mint outline-none" 
+             placeholder="Say something..." 
+             value={chatMsg}
+             onChange={e => setChatMsg(e.target.value)}
+             onKeyDown={handleSendChat}
+           />
         </div>
       </div>
     </div>

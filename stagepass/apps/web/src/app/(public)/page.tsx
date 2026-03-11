@@ -11,6 +11,7 @@ export default function HomePage() {
   const [sort, setSort] = useState<"NEWEST" | "MOST_DISCUSSED" | "TRENDING">("NEWEST");
   const [feed, setFeed] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     async function load() {
@@ -20,6 +21,15 @@ export default function HomePage() {
     }
     load();
   }, []);
+
+  const handleAddList = () => {
+    alert("Added to your Watch List!");
+  };
+
+  const handleLoadMore = () => {
+    alert("Loading more content... (Demo)");
+    // In real app, fetch next page
+  };
 
   return (
     <div className="space-y-12">
@@ -43,7 +53,7 @@ export default function HomePage() {
                 Watch Premiere
               </Button>
             </Link>
-            <Button variant="secondary" size="lg" className="rounded-full px-8">
+            <Button variant="secondary" size="lg" className="rounded-full px-8" onClick={handleAddList}>
               + Add to List
             </Button>
           </div>
@@ -78,9 +88,11 @@ export default function HomePage() {
           </div>
         )}
         
-        <div className="flex justify-center pt-8">
-          <Button variant="ghost">Load More</Button>
-        </div>
+        {feed.length > 0 && (
+          <div className="flex justify-center pt-8">
+            <Button variant="ghost" onClick={handleLoadMore}>Load More</Button>
+          </div>
+        )}
       </div>
     </div>
   );
