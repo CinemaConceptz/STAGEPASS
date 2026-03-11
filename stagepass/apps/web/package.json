@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -20,9 +20,10 @@
     "tailwind-merge": "^2.3.0",
     "react-google-drive-picker": "^1.1.0",
     "googleapis": "^126.0.1",
-    "@google-cloud/storage": "^7.7.0",
-    "@google-cloud/video-transcoder": "^3.1.0",
-    "@google-cloud/livestream": "latest"
+    "@google-cloud/storage": "6.12.0",
+    "@google-cloud/video-transcoder": "2.2.0",
+    "@google-cloud/livestream": "latest",
+    "@google-cloud/vertexai": "^1.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.10",
