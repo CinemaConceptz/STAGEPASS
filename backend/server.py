@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException, Depends, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 from typing import List
@@ -38,6 +39,18 @@ class LoginRequest(BaseModel):
 @app.get("/")
 async def root():
     return {"message": "Welcome to STAGEPASS API", "status": "online"}
+
+@app.get("/api/download/stagepass-production")
+async def download_production_zip():
+    """Serve the production-ready STAGEPASS source code zip."""
+    zip_path = "/app/stagepass_production.zip"
+    if not os.path.exists(zip_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename="stagepass_production.zip"
+    )
 
 @app.post("/api/auth/login")
 async def login(data: LoginRequest):

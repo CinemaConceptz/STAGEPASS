@@ -23,6 +23,7 @@
     "@google-cloud/storage": "6.12.0",
     "@google-cloud/video-transcoder": "2.2.0",
     "@google-cloud/livestream": "latest",
+    "@google-cloud/pubsub": "^4.3.3",
     "firebase-admin": "^13.0.0"
   },
   "devDependencies": {

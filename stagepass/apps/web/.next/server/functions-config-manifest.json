@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/radio/station/now":{},"/api/radio/station":{},"/api/live/session":{},"/legal/[slug]":{}}}
+{"version":1,"functions":{"/api/live/session":{},"/api/radio/station/now":{},"/api/radio/station":{},"/api/content/import-drive":{},"/legal/[slug]":{}}}

@@ -3,35 +3,62 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Copy, Eye, Radio, Play } from "lucide-react";
+import { Copy, Radio, Eye } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LiveDashboard() {
+  const { user } = useAuth();
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [streamInfo, setStreamInfo] = useState<{ url: string; playback: string } | null>(null);
+  const [streamInfo, setStreamInfo] = useState<{
+    url: string;
+    playback: string;
+    channelId: string;
+  } | null>(null);
+  const [error, setError] = useState("");
 
   const handleGoLive = async () => {
+    if (!user) return;
     setLoading(true);
+    setError("");
     try {
-      // Call our API to provision the Google Cloud Channel
+      const idToken = await user.getIdToken();
       const res = await fetch("/api/live/session", {
         method: "POST",
-        body: JSON.stringify({ userId: "demo", title: "My Live Stream" })
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+          title: "Live Stream",
+        }),
       });
       const data = await res.json();
-      
       if (data.success) {
         setStreamInfo({
           url: data.streamUrl,
-          playback: data.playbackUrl
+          playback: data.playbackUrl,
+          channelId: data.channelId,
         });
         setIsLive(true);
+      } else {
+        setError(data.error || "Failed to start stream.");
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEndStream = async () => {
+    setIsLive(false);
+    setStreamInfo(null);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
   };
 
   return (
@@ -42,55 +69,82 @@ export default function LiveDashboard() {
             <Radio className={isLive ? "text-red-500 animate-pulse" : "text-stage-mutetext"} />
             Live Control Room
           </h1>
-          <p className="text-stage-mutetext">Manage your broadcast.</p>
+          <p className="text-stage-mutetext">Broadcast to your audience in real time.</p>
         </div>
-        
+
         {!isLive ? (
           <Button variant="primary" size="lg" onClick={handleGoLive} disabled={loading}>
-            {loading ? "Provisioning Satellite..." : "Start Broadcast"}
+            {loading ? "Provisioning Channel..." : "Start Broadcast"}
           </Button>
         ) : (
-          <Button variant="destructive" size="lg" onClick={() => setIsLive(false)}>
+          <Button variant="destructive" size="lg" onClick={handleEndStream}>
             End Stream
           </Button>
         )}
       </div>
 
+      {error && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      {!isLive && !streamInfo && (
+        <div className="bg-stage-panel border border-white/10 rounded-2xl p-12 text-center space-y-4">
+          <Radio size={48} className="mx-auto text-stage-mutetext" />
+          <h2 className="text-xl font-bold">Ready to broadcast?</h2>
+          <p className="text-stage-mutetext max-w-sm mx-auto">
+            Click &ldquo;Start Broadcast&rdquo; to provision your Google Cloud live stream channel and receive your OBS stream key.
+          </p>
+        </div>
+      )}
+
       {isLive && streamInfo && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Stream Key / Ingest Info */}
-          <div className="bg-stage-panel rounded-2xl p-6 border border-white/10 space-y-6">
-            <h3 className="text-lg font-bold border-b border-white/10 pb-2">Encoder Settings (OBS)</h3>
-            
-            <div className="space-y-2">
-              <label className="text-xs uppercase font-bold text-stage-mutetext">Stream URL (Server)</label>
-              <div className="flex gap-2">
-                <Input value={streamInfo.url} readOnly className="font-mono text-xs bg-black/50" />
-                <Button variant="secondary" className="px-3"><Copy size={16} /></Button>
+          {/* Stream Config */}
+          <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-4">
+            <h2 className="font-bold text-lg flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              Stream Config (OBS)
+            </h2>
+            <div>
+              <label className="block text-xs text-stage-mutetext mb-1 uppercase tracking-widest">RTMP URL</label>
+              <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2">
+                <code className="text-xs text-stage-mint flex-1 break-all">{streamInfo.url}</code>
+                <button onClick={() => copyToClipboard(streamInfo.url)}>
+                  <Copy size={14} className="text-stage-mutetext hover:text-white" />
+                </button>
               </div>
             </div>
-
-            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-sm text-yellow-200">
-              ⚠️ <strong>Important:</strong> Paste this URL into OBS Settings under "Stream". Start streaming in OBS to go live.
+            <div>
+              <label className="block text-xs text-stage-mutetext mb-1 uppercase tracking-widest">Stream Key</label>
+              <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2">
+                <code className="text-xs text-stage-mint flex-1">live</code>
+                <button onClick={() => copyToClipboard("live")}>
+                  <Copy size={14} className="text-stage-mutetext hover:text-white" />
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Preview Monitor */}
-          <div className="bg-black rounded-2xl border border-white/10 overflow-hidden relative group aspect-video flex items-center justify-center">
-             <div className="text-center space-y-2">
-               <div className="h-12 w-12 rounded-full border-2 border-white/20 flex items-center justify-center mx-auto">
-                 <Play size={24} className="ml-1" />
-               </div>
-               <p className="text-sm font-mono text-stage-mutetext">Waiting for signal...</p>
-             </div>
-             
-             {/* Overlay */}
-             <div className="absolute top-4 right-4 flex gap-2">
-               <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded">LIVE</span>
-               <span className="bg-black/50 text-white text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
-                 <Eye size={10} /> 0
-               </span>
-             </div>
+          {/* Playback */}
+          <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-4">
+            <h2 className="font-bold text-lg flex items-center gap-2">
+              <Eye size={18} className="text-stage-mint" />
+              Viewer Playback
+            </h2>
+            <div>
+              <label className="block text-xs text-stage-mutetext mb-1 uppercase tracking-widest">HLS URL</label>
+              <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2">
+                <code className="text-xs text-stage-mint flex-1 break-all">{streamInfo.playback}</code>
+                <button onClick={() => copyToClipboard(streamInfo.playback)}>
+                  <Copy size={14} className="text-stage-mutetext hover:text-white" />
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-stage-mutetext">
+              The stream will appear on the Live page once your broadcast starts.
+            </p>
           </div>
         </div>
       )}
