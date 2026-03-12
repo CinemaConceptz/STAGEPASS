@@ -1,17 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useDrivePicker from "react-google-drive-picker";
 import Button from "@/components/ui/Button";
 import { connectGoogleDrive } from "@/lib/firebase/drive";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, Music, Video } from "lucide-react";
 
 interface DrivePickerProps {
-  onSelect: (file: { id: string; name: string; mimeType: string; token: string }) => void;
+  onSelect: (file: {
+    id: string;
+    name: string;
+    mimeType: string;
+    token: string;
+  }) => void;
+  mode?: "video" | "audio" | "folder";
+  label?: string;
 }
 
-export default function DrivePicker({ onSelect }: DrivePickerProps) {
-  const [openPicker, authResponse] = useDrivePicker();
+export default function DrivePicker({
+  onSelect,
+  mode = "video",
+  label,
+}: DrivePickerProps) {
+  const [openPicker] = useDrivePicker();
   const [token, setToken] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -26,17 +37,30 @@ export default function DrivePicker({ onSelect }: DrivePickerProps) {
 
   const handleOpen = () => {
     if (!token) return;
-    
-    // Check if we need to load script (handled by hook usually)
+
+    const viewId =
+      mode === "video"
+        ? "DOCS_VIDEOS"
+        : mode === "folder"
+        ? "FOLDERS"
+        : "DOCS"; // DOCS allows MIME type filtering
+
+    const mimeTypes =
+      mode === "audio"
+        ? "audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/flac,audio/aac,audio/x-m4a,audio/*"
+        : undefined;
+
     openPicker({
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
       developerKey: process.env.NEXT_PUBLIC_GOOGLE_API_KEY!,
-      viewId: "DOCS_VIDEOS", // Only show videos/media
-      token: token,
-      showUploadView: true,
-      showUploadFolders: true,
+      viewId,
+      token,
+      showUploadView: false,
+      showUploadFolders: mode === "folder",
       supportDrives: true,
       multiselect: false,
+      // Filter to audio MIME types when in audio mode
+      ...(mimeTypes ? { customViews: undefined } : {}),
       callbackFunction: (data) => {
         if (data.action === "picked") {
           const file = data.docs[0];
@@ -44,19 +68,31 @@ export default function DrivePicker({ onSelect }: DrivePickerProps) {
             id: file.id,
             name: file.name,
             mimeType: file.mimeType,
-            token: token
+            token: token!,
           });
         }
       },
     });
   };
 
+  const buttonLabel =
+    label ||
+    (mode === "audio"
+      ? "Select Audio File"
+      : mode === "folder"
+      ? "Select Folder"
+      : "Select Video File");
+
+  const Icon = mode === "audio" ? Music : mode === "folder" ? UploadCloud : Video;
+
   if (!token) {
     return (
       <div className="text-center p-8 border-2 border-dashed border-white/10 rounded-2xl bg-stage-panel/50">
         <UploadCloud className="mx-auto h-12 w-12 text-stage-mutetext mb-4" />
         <h3 className="text-lg font-bold mb-2">Import from Drive</h3>
-        <p className="text-sm text-stage-mutetext mb-4">Connect your Google Drive to import high-quality masters.</p>
+        <p className="text-sm text-stage-mutetext mb-4">
+          Connect your Google Drive to import your content.
+        </p>
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
         <Button variant="primary" onClick={handleConnect}>
           Connect Google Drive
@@ -67,11 +103,17 @@ export default function DrivePicker({ onSelect }: DrivePickerProps) {
 
   return (
     <div className="text-center p-8 border-2 border-dashed border-stage-mint/30 rounded-2xl bg-stage-panel/50 hover:bg-stage-panel transition-colors">
-      <UploadCloud className="mx-auto h-12 w-12 text-stage-mint mb-4" />
+      <Icon className="mx-auto h-12 w-12 text-stage-mint mb-4" />
       <h3 className="text-lg font-bold mb-2">Drive Connected</h3>
-      <p className="text-sm text-stage-mutetext mb-4">Ready to select content for premiere.</p>
+      <p className="text-sm text-stage-mutetext mb-4">
+        {mode === "audio"
+          ? "Ready to select your MP3/audio files."
+          : mode === "folder"
+          ? "Ready to select a folder."
+          : "Ready to select your video content."}
+      </p>
       <Button variant="secondary" onClick={handleOpen}>
-        Select Video File
+        {buttonLabel}
       </Button>
     </div>
   );

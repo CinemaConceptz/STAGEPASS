@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server";
-import { VertexAI } from "@google-cloud/vertexai";
 
-// Initialize Vertex AI
-const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-const location = "us-central1";
-const vertexAI = new VertexAI({ project: project || "stagepass-live-v1", location });
-
-// System Prompt: Defines Encore's Persona and Knowledge
 const SYSTEM_PROMPT = `
 You are Encore, the intelligent AI Butler for STAGEPASS.
 STAGEPASS is a creator ecosystem for live streaming, video premieres, and radio stations.
@@ -16,25 +9,26 @@ You have the ability to NAVIGATE the user to specific pages.
 If the user's intent is to go somewhere, you MUST output a JSON action.
 
 SITE MAP:
-- "/studio/uploads" : Upload Video, Import Content
+- "/studio/uploads" : Upload Video, Import Content from Drive
 - "/studio/live" : Go Live, Broadcast Center, Stream Key
-- "/studio/radio" : Start Radio Station, Manager
+- "/studio/radio" : Start Radio Station, Station Manager
 - "/live" : Watch Live Streams
 - "/radio" : Listen to Global Radio
-- "/explore" : Find Content
+- "/explore" : Find and Discover Content
+- "/login" : Sign In
 - "/signup" : Create Account
 
 RESPONSE FORMAT:
-You must return a valid JSON object. Do not include markdown formatting.
+You MUST return ONLY a valid JSON object. Do NOT include markdown code blocks or any extra text.
 {
   "text": "Your spoken response to the user.",
   "action": "NAVIGATE" | "NONE",
-  "target": "/path/to/page" (if action is NAVIGATE),
-  "emotion": "FOCUSED" | "EXCITED" | "ANALYTICAL"
+  "target": "/path/to/page",
+  "emotion": "FOCUSED" | "EXCITED" | "ANALYTICAL" | "CONCERNED"
 }
 
-Example User: "I want to go live"
-Example Output: { "text": "Right away. Let's get your signal on air.", "action": "NAVIGATE", "target": "/studio/live", "emotion": "EXCITED" }
+Example: User says "I want to go live"
+Output: {"text":"Right away. Let's get your signal on air.","action":"NAVIGATE","target":"/studio/live","emotion":"EXCITED"}
 `;
 
 export async function POST(req: Request) {
@@ -42,42 +36,65 @@ export async function POST(req: Request) {
     const body = await req.json();
     const userMessage = body.text || "";
 
-    const model = vertexAI.getGenerativeModel({ model: "gemini-pro" });
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({
+        text: "Encore is offline. Google API key not configured.",
+        action: "NONE",
+        emotion: "CONCERNED",
+      });
+    }
 
-    const chat = model.startChat({
-      history: [
-        { role: "user", parts: [{ text: "System: " + SYSTEM_PROMPT }] },
-        { role: "model", parts: [{ text: "Understood. I am ready to serve." }] }
-      ],
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ role: "user", parts: [{ text: userMessage }] }],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 512,
+          },
+        }),
+      }
+    );
 
-    const result = await chat.sendMessage(userMessage);
-    const response = result.response;
-    const text = response.candidates?.[0].content.parts[0].text || "";
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("Gemini API error:", res.status, errText);
+      throw new Error(`Gemini responded with ${res.status}`);
+    }
 
-    // Clean up response if it has markdown code blocks
-    const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    
+    const data = await res.json();
+    const rawText =
+      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    // Strip markdown code blocks if present
+    const cleanText = rawText
+      .replace(/```json\s*/g, "")
+      .replace(/```\s*/g, "")
+      .trim();
+
     let parsedResponse;
     try {
       parsedResponse = JSON.parse(cleanText);
-    } catch (e) {
-      // Fallback if Gemini returns plain text
+    } catch {
       parsedResponse = {
-        text: cleanText,
+        text: cleanText || "I'm ready to assist your production.",
         action: "NONE",
-        emotion: "FOCUSED"
+        emotion: "FOCUSED",
       };
     }
 
     return NextResponse.json(parsedResponse);
-
   } catch (error: any) {
     console.error("Encore Brain Error:", error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       text: "I am having trouble connecting to my neural network. Please try again.",
       action: "NONE",
-      emotion: "CONCERNED"
+      emotion: "CONCERNED",
     });
   }
 }

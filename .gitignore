@@ -164,3 +164,9 @@ stagepass_encore_active.tar.gz
 frontend/public/stagepass_encore_active.tar.gz
 stagepass_auto_dj.tar.gz
 frontend/public/stagepass_auto_dj.tar.gz
+-e 
+# Environment files
+*.env
+*.env.*
+stagepass/apps/web/.next/cache/webpack/server-production/0.pack
+frontend/public/stagepass_upload_fix.tar.gz

@@ -1,0 +1,21 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(auth)/signup/page": "app/(auth)/signup/page.js",
+  "/(public)/c/[slug]/page": "app/(public)/c/[slug]/page.js",
+  "/(public)/content/[id]/page": "app/(public)/content/[id]/page.js",
+  "/(public)/explore/page": "app/(public)/explore/page.js",
+  "/(public)/live/page": "app/(public)/live/page.js",
+  "/(public)/page": "app/(public)/page.js",
+  "/(public)/radio/page": "app/(public)/radio/page.js",
+  "/(studio)/studio/live/page": "app/(studio)/studio/live/page.js",
+  "/(studio)/studio/page": "app/(studio)/studio/page.js",
+  "/(studio)/studio/radio/page": "app/(studio)/studio/radio/page.js",
+  "/(studio)/studio/uploads/page": "app/(studio)/studio/uploads/page.js",
+  "/api/butler/resolve/route": "app/api/butler/resolve/route.js",
+  "/api/content/import-drive/route": "app/api/content/import-drive/route.js",
+  "/api/live/session/route": "app/api/live/session/route.js",
+  "/api/radio/station/route": "app/api/radio/station/route.js",
+  "/api/radio/station/now/route": "app/api/radio/station/now/route.js",
+  "/(public)/legal/[slug]/page": "app/(public)/legal/[slug]/page.js"
+}

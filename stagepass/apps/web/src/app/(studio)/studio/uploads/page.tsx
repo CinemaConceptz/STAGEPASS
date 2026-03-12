@@ -4,35 +4,39 @@ import { useState } from "react";
 import DrivePicker from "@/components/studio/DrivePicker";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import { useAuth } from "@/context/AuthContext";
 
 export default function UploadPage() {
+  const { user } = useAuth();
   const [selectedFile, setSelectedFile] = useState<{ name: string; id: string } | null>(null);
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState("IDLE"); // IDLE, IMPORTING, PROCESSING, DONE
 
   const handleDriveSelect = async (file: any) => {
     setSelectedFile(file);
-    setTitle(file.name.replace(/\.[^/.]+$/, "")); // remove extension
+    setTitle(file.name.replace(/\.[^/.]+$/, "")); 
   };
 
   const handleImport = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !user) return;
     setStatus("IMPORTING");
 
     try {
-      // Call our API to start the backend transfer
       const res = await fetch("/api/content/import-drive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           fileId: selectedFile.id,
           title: title,
-          token: (selectedFile as any).token // In prod, pass this securely or use refresh token from session
+          token: (selectedFile as any).token,
+          userId: user.uid,
+          creatorName: user.displayName
         })
       });
       
       if (res.ok) {
-        setStatus("PROCESSING");
+        setStatus("DONE");
+        alert("Success! Your video is processing and will appear on the Home Page shortly.");
       } else {
         setStatus("ERROR");
       }
@@ -76,12 +80,12 @@ export default function UploadPage() {
             <Button 
               variant="primary" 
               onClick={handleImport}
-              disabled={status === "IMPORTING" || status === "PROCESSING"}
+              disabled={status === "IMPORTING" || status === "PROCESSING" || status === "DONE"}
             >
               {status === "IDLE" && "Start Import"}
-              {status === "IMPORTING" && "Transferring..."}
-              {status === "PROCESSING" && "Processing..."}
-              {status === "DONE" && "Done"}
+              {status === "IMPORTING" && "Processing..."}
+              {status === "DONE" && "Success! (Check Home)"}
+              {status === "ERROR" && "Error - Try Again"}
             </Button>
           </div>
         </div>

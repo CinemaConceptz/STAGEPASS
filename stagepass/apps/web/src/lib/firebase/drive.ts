@@ -1,6 +1,6 @@
 "use client";
 
-import { GoogleAuthProvider, linkWithPopup, getAuth } from "firebase/auth";
+import { GoogleAuthProvider, linkWithPopup, reauthenticateWithPopup } from "firebase/auth";
 import { auth } from "./client";
 
 const SCOPES = [
@@ -13,17 +13,28 @@ export async function connectGoogleDrive() {
   const provider = new GoogleAuthProvider();
   SCOPES.forEach(scope => provider.addScope(scope));
 
+  // Check if already linked
+  const isLinked = auth.currentUser.providerData.some(
+    (p: { providerId: string }) => p.providerId === "google.com"
+  );
+
   try {
-    // Link the existing user with Google credentials that have Drive scope
-    const result = await linkWithPopup(auth.currentUser, provider);
+    let result;
+    if (isLinked) {
+      // If already linked, re-authenticate to refresh/get the token with scopes
+      console.log("Account already linked, refreshing token...");
+      result = await reauthenticateWithPopup(auth.currentUser, provider);
+    } else {
+      // First time linking
+      console.log("Linking new Google account...");
+      result = await linkWithPopup(auth.currentUser, provider);
+    }
+
     const credential = GoogleAuthProvider.credentialFromResult(result);
     return credential?.accessToken;
   } catch (error: any) {
     if (error.code === 'auth/credential-already-in-use') {
-       // If account already exists, we might need to just re-auth to get the token
-       // For MVP, we'll assume the user might need to sign in again or we handle merge logic
-       console.warn("Account already linked");
-       // In a real app, you'd handle account merging here
+       throw new Error("This Google Account is already connected to another user. Please log out and sign in with Google.");
     }
     throw error;
   }

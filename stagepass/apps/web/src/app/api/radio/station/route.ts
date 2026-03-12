@@ -1,43 +1,50 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase/client"; // Use admin in prod
-import { doc, setDoc } from "firebase/firestore";
-import { listAudioFiles } from "@/lib/google/drive-indexer";
+import { getFirestore } from "firebase-admin/firestore";
+import { adminApp } from "@/lib/firebase/admin";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { userId, stationName, genre, description, driveFolderId, token } = body;
-
-    // 1. Index the folder (find tracks)
-    const tracks = await listAudioFiles(token, driveFolderId);
-
-    // 2. Create/Update Station Doc
-    const stationData = {
-      ownerUid: userId,
-      name: stationName,
+    const {
+      stationId,
+      userId,
+      stationName,
       genre,
       description,
-      driveFolderId,
-      trackCount: tracks.length,
-      tracks: tracks.map(t => ({
-        id: t.id,
-        title: t.name,
-        url: t.webContentLink, // Note: Direct links expire or have quotas. Better to import.
-        duration: 0 // Drive doesn't always give duration easily without probing
-      })),
-      updatedAt: new Date().toISOString()
+      driveFileId,
+      driveFileName,
+    } = body;
+
+    if (!stationId || !userId) {
+      return NextResponse.json(
+        { success: false, error: "Missing stationId or userId" },
+        { status: 400 }
+      );
+    }
+
+    const db = getFirestore(adminApp);
+
+    const stationData = {
+      stationId,
+      ownerUid: userId,
+      name: stationName || "My Station",
+      genre: genre || "Other",
+      description: description || "",
+      driveFileId: driveFileId || null,
+      driveFileName: driveFileName || null,
+      updatedAt: new Date().toISOString(),
     };
 
-    // Store in 'radioStations' collection
-    // In prod: use Admin SDK to write
-    // For now, we return data for frontend to write if using client SDK, 
-    // or we assume this API has admin privs (which it should in Cloud Run).
-    // Let's assume we write via client for MVP simplicity or just return success
-    
-    return NextResponse.json({ success: true, station: stationData });
+    await db.collection("radioStations").doc(stationId).set(stationData, { merge: true });
 
+    return NextResponse.json({ success: true, stationId });
   } catch (error: any) {
-    console.error("Radio Error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error("Radio station error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
   }
 }
