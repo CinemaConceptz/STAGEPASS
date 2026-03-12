@@ -172,3 +172,7 @@ stagepass/apps/web/.next/cache/webpack/server-production/0.pack
 frontend/public/stagepass_upload_fix.tar.gz
 stagepass/apps/web/.next/cache/webpack/server-production/3.pack
 stagepass/apps/web/.next/cache/webpack/server-production/2.pack
+-e 
+# Environment files
+*.env
+*.env.*
