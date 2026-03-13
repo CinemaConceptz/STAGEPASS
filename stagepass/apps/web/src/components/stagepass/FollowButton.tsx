@@ -9,9 +9,10 @@ interface Props {
   initialFollowing?: boolean;
   initialCount?: number;
   className?: string;
+  onToggle?: (following: boolean) => void;
 }
 
-export default function FollowButton({ creatorId, initialFollowing = false, initialCount = 0, className = "" }: Props) {
+export default function FollowButton({ creatorId, initialFollowing = false, initialCount = 0, className = "", onToggle }: Props) {
   const { user } = useAuth();
   const [following, setFollowing] = useState(initialFollowing);
   const [count, setCount] = useState(initialCount);
@@ -45,8 +46,10 @@ export default function FollowButton({ creatorId, initialFollowing = false, init
       });
       const data = await res.json();
       if (data.success !== false) {
-        setFollowing(!following);
+        const newState = !following;
+        setFollowing(newState);
         setCount(c => following ? Math.max(0, c - 1) : c + 1);
+        onToggle?.(newState);
       }
     } catch { /* silent */ }
     setLoading(false);

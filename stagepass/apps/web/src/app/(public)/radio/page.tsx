@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import ScheduleGrid from "@/components/radio/ScheduleGrid";
-import { Play, Music2, Pause, Volume2, VolumeX, Radio, Headphones, SkipForward, Calendar, Layers } from "lucide-react";
+import { Play, Music2, Pause, Volume2, VolumeX, Radio, Headphones, SkipForward, Calendar, Layers, Star, Zap } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ScheduleSlot, getActiveScheduleSlot } from "@/lib/radio/scheduler";
 
@@ -180,6 +180,8 @@ export default function RadioPage() {
 
   const featuredStation = stations.find(s => s.featured) || stations[0];
   const regularStations = stations.filter(s => s.id !== featuredStation?.id);
+
+  return (
     <div className="max-w-7xl mx-auto space-y-12 py-8">
       {/* Header */}
       <div className="text-center space-y-4">
@@ -361,18 +363,20 @@ export default function RadioPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => { if (audioRef.current) audioRef.current.muted = !muted; setMuted(!muted); }} className="text-stage-mutetext hover:text-white transition-colors p-2" data-testid="mini-player-mute">
+              <button onClick={() => setMuted(!muted)} className="text-stage-mutetext hover:text-white transition-colors p-2" data-testid="mini-player-mute">
                 {muted ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </button>
               <button onClick={skipTrack} className="text-stage-mutetext hover:text-white transition-colors p-2" data-testid="mini-player-skip">
                 <SkipForward size={20} />
               </button>
               <button onClick={() => playStation(activeStation)} className="bg-white text-black rounded-full p-2.5 hover:scale-110 transition-transform" data-testid="mini-player-pause">
-                <Pause size={18} fill="currentColor" />
+                {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
               </button>
+              {crossfading && (
+                <span className="text-xs text-stage-mint animate-pulse ml-1">Crossfading...</span>
+              )}
             </div>
           </div>
-          <audio ref={audioRef} onEnded={() => { if (activeStation) playStation(activeStation); }} />
         </div>
       )}
     </div>

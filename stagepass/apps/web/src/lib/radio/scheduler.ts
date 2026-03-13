@@ -37,17 +37,19 @@ export function getNowPlaying(
   if (!tracks.length) return null;
 
   // Apply mood filter — fall back to all tracks if filter yields nothing
-  const pool = moodFilter?.length
-    ? (tracks.filter(t => moodFilter.includes(t.mood || "")) || [])
-    : tracks;
-  const totalDuration = orderedRaw.reduce((acc, t) => acc + (t.durationMs || 180000), 0);
+  let filtered = moodFilter?.length
+    ? tracks.filter(t => moodFilter.includes(t.mood || ""))
+    : [];
+  const pool = filtered.length > 0 ? filtered : tracks;
+
+  const totalDuration = pool.reduce((acc, t) => acc + (t.durationMs || 180000), 0);
   if (totalDuration === 0) return null;
 
   const epoch = new Date("2026-01-01T00:00:00Z").getTime();
   const now = Date.now();
   const elapsed = now - epoch;
 
-  let orderedTracks = [...orderedRaw];
+  let orderedTracks = [...pool];
   if (shuffle) {
     const daySeed = Math.floor(elapsed / 86400000);
     orderedTracks = deterministicShuffle(orderedTracks, daySeed);

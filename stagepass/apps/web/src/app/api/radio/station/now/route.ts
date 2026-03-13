@@ -28,17 +28,19 @@ export async function GET(req: Request) {
       artist: t.artist || "",
       url: t.url,
       durationMs: t.durationMs || t.duration || 180000,
+      mood: t.mood || "",
     }));
 
     const schedule: ScheduleSlot[] = data.schedule || [];
     const autoDjEnabled = data.autoDjEnabled !== false;
     const autoDjShuffle = data.autoDjShuffle || false;
+    const moodFilter: string[] = data.moodFilter || [];
 
     // Check if a scheduled show is currently active
     const activeSlot = getActiveScheduleSlot(schedule);
 
     // Get now playing from Auto-DJ
-    const nowPlaying = getNowPlaying(tracks, autoDjShuffle);
+    const nowPlaying = getNowPlaying(tracks, autoDjShuffle, moodFilter.length > 0 ? moodFilter : undefined);
 
     return NextResponse.json({
       success: true,

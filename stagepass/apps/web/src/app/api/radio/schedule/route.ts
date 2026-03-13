@@ -26,6 +26,9 @@ export async function GET(req: Request) {
       autoDj: {
         enabled: data.autoDjEnabled !== false,
         shuffle: data.autoDjShuffle || false,
+        crossfadeEnabled: data.crossfadeEnabled ?? false,
+        crossfadeDuration: data.crossfadeDuration ?? 3,
+        moodFilter: data.moodFilter ?? [],
       },
     });
   } catch (error: any) {
