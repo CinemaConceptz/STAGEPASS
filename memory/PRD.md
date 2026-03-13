@@ -38,6 +38,11 @@ apps/
 - **Follow system**: FollowButton component with follow/unfollow toggle, follower count, onToggle callback
 - **Notifications**: NotificationBell with polling (30s), mark-all-read, notification dropdown
 - **Signup fix**: Moved user/creator profile creation from client-side Firestore `setDoc` to server-side `/api/auth/signup` (Admin SDK), fixing "Missing or insufficient permissions" error
+- **Profile fix**: Moved profile reads/writes from client Firestore to server-side `/api/profile` GET/PUT (Admin SDK), fixing display name loading issue
+- **Player fix**: Added `driveFileId` prop with Google Drive iframe fallback when HLS/signed-url unavailable. Shows "processing" state instead of broken controls
+- **Upload fix**: Added "Upload Another" button after successful import to reset state
+- **Schedule fix**: Changed time increments from 30-min to 15-min (0, 15, 30, 45) + "Midnight (End of Day)" end time
+- **Radio station fix**: Generate HLS button now disabled until station is created. Track URLs include `driveUrl` fallback. Auto-DJ now uses Drive URLs when GCS files aren't available
 - **Comments system**: Replaced LiveChat with Comments on recorded video pages (GET/POST /api/comments/[contentId])
 - **Play icon fix**: ContentCard play icons now vibrant (gradient bg, stage-mint hover, larger button)
 - **Hero play icon**: Updated from barely-visible to prominent stage-mint styled icon
