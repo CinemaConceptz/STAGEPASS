@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Player from "@/components/stagepass/Player";
-import LiveChat from "@/components/stagepass/LiveChat";
+import Comments from "@/components/stagepass/Comments";
 import FollowButton from "@/components/stagepass/FollowButton";
-import { getContentById, incrementViewCount, trackListener, type ContentItem } from "@/lib/firebase/firestore";
+import { incrementViewCount, trackListener } from "@/lib/firebase/firestore";
 import { Eye } from "lucide-react";
 import Link from "next/link";
+import { ContentItem } from "@/lib/firebase/firestore";
 
 export default function ContentPage({ params }: { params: { id: string } }) {
   const [content, setContent] = useState<ContentItem | null>(null);
@@ -85,9 +86,9 @@ export default function ContentPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Live Chat */}
+      {/* Comments */}
       <div>
-        <LiveChat channelId={params.id} className="h-full min-h-[500px]" />
+        <Comments contentId={params.id} className="h-full min-h-[500px]" />
       </div>
     </div>
   );

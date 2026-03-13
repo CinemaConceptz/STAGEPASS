@@ -22,17 +22,17 @@ export default function ContentCard({ id, title, type, creator, thumbnail }: Con
   return (
     <Card hoverEffect data-testid={`content-card-${id}`}>
       <Link href={`/content/${id}`}>
-        <div className="aspect-video bg-black/40 rounded-xl mb-3 overflow-hidden relative group">
+        <div className="aspect-video bg-black/40 rounded-xl mb-3 overflow-hidden relative group cursor-pointer">
           {thumbnail ? (
             <img src={thumbnail} alt={title} className="w-full h-full object-cover" />
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <Play size={28} className="text-zinc-600" />
+            <div className="flex items-center justify-center h-full bg-gradient-to-br from-stage-indigo/20 to-stage-mint/10">
+              <Play size={28} className="text-white/40" />
             </div>
           )}
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="h-10 w-10 bg-stage-mint rounded-full flex items-center justify-center text-black">
-              <Play size={16} fill="currentColor" />
+            <div className="h-12 w-12 bg-stage-mint rounded-full flex items-center justify-center text-black shadow-glowMint hover:scale-110 transition-transform">
+              <Play size={18} fill="currentColor" />
             </div>
           </div>
         </div>

@@ -59,8 +59,10 @@ export default function HomePage() {
               {(heroContent.thumbnail || heroContent.thumbnailUrl) ? (
                 <img src={heroContent.thumbnail || heroContent.thumbnailUrl} alt={heroContent.title} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-stage-indigo/20 to-transparent flex items-center justify-center">
-                  <Play size={48} className="text-white/10" />
+                <div className="w-full h-full bg-gradient-to-br from-stage-indigo/20 to-stage-mint/5 flex items-center justify-center">
+                  <div className="h-16 w-16 bg-stage-mint/20 rounded-full flex items-center justify-center">
+                    <Play size={32} className="text-stage-mint/60" fill="currentColor" />
+                  </div>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-r from-stage-panel via-stage-panel/60 to-transparent pointer-events-none" />
