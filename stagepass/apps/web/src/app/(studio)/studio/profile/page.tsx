@@ -72,7 +72,7 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const idToken = await user.getIdToken();
-      await fetch("/api/profile", {
+      const res = await fetch("/api/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -80,13 +80,18 @@ export default function ProfilePage() {
         },
         body: JSON.stringify({ displayName, bio, avatarUrl, socialLinks }),
       });
-      if (auth) {
-        await updateProfile(user, { displayName, photoURL: avatarUrl || undefined });
+      const data = await res.json();
+      if (data.error) {
+        alert("Save failed: " + data.error + "\nCheck /api/health for backend status.");
+      } else {
+        if (auth) {
+          await updateProfile(user, { displayName, photoURL: avatarUrl || undefined });
+        }
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      alert("Save failed: " + (e.message || "Network error"));
     }
     setSaving(false);
   };

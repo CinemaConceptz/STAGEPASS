@@ -110,44 +110,70 @@ async function getGeminiResponse(userMessage: string): Promise<any> {
   return null;
 }
 
-function getFallbackResponse(userMessage: string) {
+function getFallbackResponse(userMessage: string, isAuthenticated: boolean = true) {
   const lower = userMessage.toLowerCase();
 
+  // Signup assistance for non-authenticated users
+  if (!isAuthenticated) {
+    if (lower.includes("account") || lower.includes("sign") || lower.includes("create") || lower.includes("join") || lower.includes("register")) {
+      return { text: "Let's get you set up! I'll take you to the signup page. You can sign up with email or Google. Tip: Google signup also connects your Drive for easy uploads.", action: "SIGNUP", target: "/signup", emotion: "EXCITED" };
+    }
+    if (lower.includes("live") || lower.includes("stream") || lower.includes("upload") || lower.includes("radio")) {
+      return { text: "To go live, upload content, or start a radio station, you'll need an account first. Want me to help you create one?", action: "NONE", emotion: "FOCUSED" };
+    }
+  }
+
   if (lower.includes("live") || lower.includes("stream") || lower.includes("broadcast")) {
-    return { text: "I can set up a live stream for you. Shall I provision a channel?", action: "GO_LIVE", emotion: "EXCITED" };
+    return { text: "I'll get your live channel ready. Taking you to the broadcast center now.", action: "GO_LIVE", emotion: "EXCITED" };
   }
-  if (lower.includes("upload") || lower.includes("video") || lower.includes("import")) {
-    return { text: "Taking you to the upload suite now.", action: "UPLOAD_VIDEO", emotion: "FOCUSED" };
+  if (lower.includes("upload") || lower.includes("video") || lower.includes("import") || lower.includes("premiere")) {
+    return { text: "Let's premiere something. Opening the upload suite.", action: "UPLOAD_VIDEO", emotion: "FOCUSED" };
   }
-  if (lower.includes("radio") || lower.includes("station") || lower.includes("dj")) {
-    return { text: "Opening the Radio Station manager.", action: "RADIO_STATION", emotion: "FOCUSED" };
+  if (lower.includes("radio") || lower.includes("station") || lower.includes("dj") || lower.includes("music")) {
+    return { text: "Your radio station awaits. Let's set it up.", action: "RADIO_STATION", emotion: "FOCUSED" };
   }
-  if (lower.includes("stat") || lower.includes("analytics") || lower.includes("perform") || lower.includes("dashboard")) {
-    return { text: "Pulling up your analytics dashboard.", action: "SHOW_ANALYTICS", emotion: "ANALYTICAL" };
+  if (lower.includes("stat") || lower.includes("analytics") || lower.includes("perform") || lower.includes("dashboard") || lower.includes("numbers")) {
+    return { text: "Let me pull up your numbers.", action: "SHOW_ANALYTICS", emotion: "ANALYTICAL" };
   }
   if (lower.includes("admin")) {
-    return { text: "Navigating to the Admin panel.", action: "NAVIGATE", target: "/admin", emotion: "FOCUSED" };
+    return { text: "Opening the Admin panel.", action: "NAVIGATE", target: "/admin", emotion: "FOCUSED" };
   }
-  if (lower.includes("profile") || lower.includes("settings") || lower.includes("account")) {
+  if (lower.includes("profile") || lower.includes("settings") || lower.includes("account") || lower.includes("edit")) {
     return { text: "Opening your profile settings.", action: "NAVIGATE", target: "/studio/profile", emotion: "FOCUSED" };
   }
   if (lower.includes("schedule")) {
-    return { text: "Opening the radio schedule manager.", action: "NAVIGATE", target: "/studio/radio/schedule", emotion: "FOCUSED" };
+    return { text: "Let's manage your show schedule.", action: "NAVIGATE", target: "/studio/radio/schedule", emotion: "FOCUSED" };
   }
-  if (lower.includes("what") && lower.includes("stagepass")) {
-    return { text: "STAGEPASS is a creator-first ecosystem for live streams, video premieres, and radio stations. Your content, your audience, your signal.", action: "NONE", emotion: "FOCUSED" };
+  if (lower.includes("explore") || lower.includes("discover") || lower.includes("browse") || lower.includes("find")) {
+    return { text: "Let's see what's out there.", action: "NAVIGATE", target: "/explore", emotion: "EXCITED" };
   }
-  if (lower.includes("help") || lower.includes("what can you do")) {
-    return { text: "I can help you go live, upload videos, manage your radio station, check analytics, and navigate anywhere in STAGEPASS. Just tell me what you need.", action: "NONE", emotion: "FOCUSED" };
+  if (lower.includes("what") && (lower.includes("stagepass") || lower.includes("this"))) {
+    return { text: "STAGEPASS is a creator-first ecosystem for live streams, video premieres, and radio stations. No algorithm — your content, your audience, your signal. Creators upload content from Google Drive, go live with OBS, and build radio stations with Auto-DJ.", action: "NONE", emotion: "FOCUSED" };
+  }
+  if (lower.includes("help") || lower.includes("what can")) {
+    return { text: "I can help you go live, upload a premiere, start a radio station, check your analytics, manage your schedule, or explore content. Just tell me what you need.", action: "NONE", emotion: "FOCUSED" };
+  }
+  if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey") || lower.includes("yo")) {
+    return { text: isAuthenticated ? "What are we building today? I can help you go live, upload content, or launch a radio station." : "Welcome to STAGEPASS! Want me to help you create an account?", action: "NONE", emotion: "EXCITED" };
+  }
+  if (lower.includes("thank")) {
+    return { text: "Anytime. That's what I'm here for.", action: "NONE", emotion: "FOCUSED" };
+  }
+  if (lower.includes("drive") || lower.includes("google")) {
+    return { text: "Google Drive integration lets you import videos and audio directly. Connect it from your profile settings.", action: "NAVIGATE", target: "/studio/profile", emotion: "FOCUSED" };
   }
 
-  return { text: "I'm here to help. You can ask me to go live, upload a video, manage your radio station, or check your analytics.", action: "NONE", emotion: "FOCUSED" };
+  // Default — different based on auth status
+  return isAuthenticated
+    ? { text: "I can help you go live, premiere a video, start a radio station, or check your stats. What sounds good?", action: "NONE", emotion: "FOCUSED" }
+    : { text: "Welcome to STAGEPASS! I can help you create an account, explore content, or learn about the platform. What would you like?", action: "NONE", emotion: "FOCUSED" };
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const userMessage = body.text || "";
+    const isAuthenticated = body.isAuthenticated !== false;
 
     const geminiData = await getGeminiResponse(userMessage);
 
@@ -163,9 +189,9 @@ export async function POST(req: Request) {
     }
 
     // No AI available — use rule-based fallback
-    return NextResponse.json(getFallbackResponse(userMessage));
+    return NextResponse.json(getFallbackResponse(userMessage, isAuthenticated));
   } catch (error: any) {
     console.error("[encore] Error:", error);
-    return NextResponse.json(getFallbackResponse(""));
+    return NextResponse.json(getFallbackResponse("", true));
   }
 }

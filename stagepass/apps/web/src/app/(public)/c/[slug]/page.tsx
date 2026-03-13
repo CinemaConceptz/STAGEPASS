@@ -119,7 +119,7 @@ export default function CreatorPage() {
               id={item.id}
               title={item.title}
               type={item.type}
-              creator={{ slug: creator.slug, name: creator.displayName }}
+              creator={{ slug: creator.slug, name: creator.displayName, id: creator.uid }}
               thumbnail={item.thumbnail}
             />
           ))}

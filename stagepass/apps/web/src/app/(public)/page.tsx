@@ -126,7 +126,7 @@ export default function HomePage() {
                 id={item.id}
                 title={item.title}
                 type={item.type}
-                creator={{ slug: item.creatorSlug || "user", name: item.creatorName || "Creator" }}
+                creator={{ slug: item.creatorSlug || "user", name: item.creatorName || "Creator", id: item.creatorId }}
                 thumbnail={item.thumbnail}
               />
             ))}

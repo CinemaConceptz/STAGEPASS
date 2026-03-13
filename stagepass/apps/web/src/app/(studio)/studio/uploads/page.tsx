@@ -42,7 +42,8 @@ export default function UploadPage() {
           mood: mood || undefined,
           token: (selectedFile as any).token,
           userId: user.uid,
-          creatorName: user.displayName
+          creatorName: user.displayName,
+          creatorSlug: user.displayName?.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20) || "user",
         })
       });
       
