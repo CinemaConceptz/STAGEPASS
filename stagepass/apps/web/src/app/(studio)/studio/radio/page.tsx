@@ -5,8 +5,9 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import DrivePicker, { DriveFile } from "@/components/studio/DrivePicker";
 import ImageUploader from "@/components/studio/ImageUploader";
-import { Radio, Music, CheckCircle, X, CheckSquare, Square } from "lucide-react";
+import { Radio, Music, CheckCircle, X, CheckSquare, Square, Calendar } from "lucide-react";
 import { auth } from "@/lib/firebase/client";
+import Link from "next/link";
 
 export default function RadioStudio() {
   const [stationName, setStationName] = useState("");
@@ -79,6 +80,9 @@ export default function RadioStudio() {
           Station Manager
         </h1>
         <p className="text-stage-mutetext">Launch your 24/7 audio broadcast.</p>
+        <Link href="/studio/radio/schedule" className="text-sm text-stage-mint hover:underline flex items-center gap-1.5 mt-1">
+          <Calendar size={14} /> Manage Show Schedule &amp; Auto-DJ
+        </Link>
       </div>
 
       {success && (

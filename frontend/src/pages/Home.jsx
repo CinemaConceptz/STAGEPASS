@@ -15,12 +15,12 @@ export default function Home() {
 
   const features = [
     { icon: Shield, title: 'Auth System', desc: 'Google Sign-In + Email/Password with privacy agreement, password visibility toggle' },
-    { icon: Users, title: 'Profile Page', desc: 'Customizable profile with social links, bio, avatar, Google Drive connection management' },
-    { icon: Radio, title: 'Radio Overhaul', desc: 'Active stations grid, featured station, mini player, show creation with artwork & Drive folder' },
-    { icon: Video, title: 'Live Streaming', desc: 'RTMP URL + Stream Key for OBS/Prism, step-by-step setup instructions' },
+    { icon: Users, title: 'Profile Page', desc: 'Customizable profile with social links, bio, avatar upload, Google Drive connection' },
+    { icon: Radio, title: 'Radio + Auto-DJ', desc: 'Active stations, featured station, mini player, show scheduling, Auto-DJ with shuffle' },
+    { icon: Video, title: 'Live Streaming', desc: 'RTMP URL + Stream Key for OBS/Prism, step-by-step setup guide' },
     { icon: Monitor, title: 'Landing Page', desc: 'Hero shows most recent uploaded video, auto-rotates every 5 days' },
     { icon: Sparkles, title: 'AI Butler (Encore)', desc: 'Gemini-powered assistant that can execute real actions (go live, upload, analytics)' },
-    { icon: Smartphone, title: 'PWA Ready', desc: 'Manifest, mobile viewport, installable as app with proper icons' },
+    { icon: Smartphone, title: 'Mobile App (Expo)', desc: 'React Native app with Feed, Radio, Live, Profile screens. Ready for App Store/Play Store' },
     { icon: FileCode, title: 'Multi-Quality ABR', desc: 'HLS player with quality selector (Auto/720p/360p) for adaptive streaming' },
   ];
 

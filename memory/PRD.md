@@ -5,89 +5,76 @@ Creator ecosystem platform "STAGEPASS" on Google Cloud. Allows creators to uploa
 live stream, create radio stations, and build an audience. Creator-controlled visibility 
 (chronological feeds, no algorithm suppression).
 
-## Service Architecture (3-Tier Production)
+## Service Architecture (4-Service Production)
 ```
 apps/
-├── web/      # Next.js 14 — Thin UI client (Cloud Run stagepass-web)
-├── api/      # Express.js — All privileged operations (Cloud Run stagepass-api)
-└── worker/   # Express.js — Media processing (Cloud Run stagepass-worker)
+├── web/      # Next.js 14 — Frontend (Cloud Run stagepass-web)
+├── api/      # Express.js — Business Logic (Cloud Run stagepass-api)
+├── worker/   # Express.js — Media Processing (Cloud Run stagepass-worker)
+└── mobile/   # React Native (Expo) — iOS & Android native apps
 ```
 
-## Upload Pipeline (Production)
-```
-User → Drive Picker → POST /api/content/import-drive (web route)
-  → Firestore doc created (status=QUEUED)
-  → Pub/Sub message published to stagepass-content-process
-  → Worker receives push → downloads Drive → GCS raw bucket
-  → Transcoder API job → GCS processed bucket (HLS manifest)
-  → Firestore status → READY
-  → Playback URL: https://storage.googleapis.com/{bucket}/processed/{contentId}/manifest.m3u8
-```
+## Completed Features (March 2026)
 
-## Completed (March 2026 — Full Build + Feature Expansion)
+### Show Scheduling & Auto-DJ
+- Weekly schedule editor (day/time slots, show name, description)
+- Auto-DJ: client-side sequential playback, epoch-synced (all listeners hear same track)
+- Deterministic shuffle mode (same shuffle order per day for all listeners)
+- Schedule API: GET/POST /api/radio/schedule
+- ScheduleGrid component shows active show, upcoming shows, weekly grid
+- Mini player with skip track, mute, Auto-DJ/Scheduled mode indicator
+
+### React Native Mobile App (Expo)
+- 6 screens: Feed, Radio, Live, Profile, Login, Signup
+- Bottom tab navigation (Feed, Radio, Live, Profile)
+- Firebase Auth with AsyncStorage persistence
+- expo-av for radio audio playback with mini player
+- expo-image-picker for profile photo
+- EAS build configs for iOS/Android production builds
+- Same STAGEPASS theme tokens (colors, spacing) as web
 
 ### Web App (Next.js 14)
-- Route group layouts: `(studio)`, `(public)`, `(auth)`, `(admin)`
-- Login page: password eye toggle, Google Sign-In
-- Signup page: privacy agreement popup, password eye toggle, Google Sign-Up (with Drive permission), hidden slug (auto-generated)
-- Profile page: customizable (name, bio, avatar, social links, Google Drive connection management)
-- Radio page: active stations grid, featured station of the month, mini player, sign up CTA
-- Radio studio: station creation with name, description, artwork, Drive folder selection
-- Live page: broadcast with RTMP URL + Stream Key for OBS/Prism/3rd party
-- Landing page: hero shows most recent uploaded video (auto-rotates)
-- HLS Player: multi-quality ABR with quality selector (Auto/720p/360p)
+- Auth: Google Sign-In, Email/Password, privacy agreement, password eye toggle
+- Profile: customizable (name, bio, avatar upload, social links, Google Drive management)
+- Radio: active stations grid, featured station, multi-track audio picker with checkboxes
+- Live: RTMP URL + Stream Key for OBS/Prism/3rd party
+- Landing: hero shows most recent uploaded video
+- HLS Player: multi-quality ABR with quality selector
 - PWA: manifest.json, icons, mobile viewport, installable
-- Butler (Encore): Gemini via server-side API key (not exposed in browser)
-- Firestore calls: 8s timeout with Promise.race (no infinite loading)
-- All interactive elements have data-testid attributes
-- Logo: proper STAGEPASS icon (replaced 0-byte empty file)
+- Butler (Encore): Gemini AI assistant
+- Image upload: drag-and-drop file upload (not URL input)
 
-### API Service (Express.js — apps/api/)
-- Firebase ID token verification middleware
+### API Service (Express.js)
+- Firebase ID token verification
 - Content CRUD, signed URLs, Drive import
 - Live session provisioning with RTMP URL + Stream Key
-- Radio station management
-- Follow/Unfollow system
-- Notifications, Analytics, Admin stats
-- Butler (Gemini 1.5 Flash)
+- Radio station management (multi-track, artwork)
+- Schedule CRUD, Auto-DJ settings
+- Follow/Unfollow, Notifications, Analytics, Admin stats
 
-### Media Worker (Express.js — apps/worker/)
+### Media Worker (Express.js)
 - Pub/Sub push endpoint for content processing
 - Drive → GCS transfer, Transcoder API (720p + 360p HLS)
-- Firestore status updates: INGESTING → TRANSCODING → READY/FAILED
 
-### Deployment
-- deploy_production.ps1: deploys all 3 services
-- SETUP.md: post-deployment guide (Firebase Auth, Drive API, Firestore indexes, custom domain)
-
-## Environment Variables
-| Variable | Value |
-|---|---|
-| `NEXT_PUBLIC_FIREBASE_APP_ID` | `1:1005750289786:web:b77c70ef474707640d02c3` |
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | `AIzaSyC88kuIJXBFt9w5Mmpu8t3lnSrSz2X3Kd0` |
-| `NEXT_PUBLIC_GOOGLE_API_KEY` | `AIzaSyDGg9xBDUyXoS6hNepgMx5xAacX_C3q_TI` |
-| `FIREBASE_PROJECT_ID` | `stagepass-live-v1` |
-
-## GCP Services Required
-- Cloud Run (web, api, worker)
-- Cloud Build + Artifact Registry
-- Pub/Sub (stagepass-content-process topic)
-- Cloud Storage (Firebase Storage bucket)
-- Transcoder API, Live Stream API
-- Firestore, Drive API
-- Generative Language API (Gemini)
+## Key API Endpoints
+- `POST /api/radio/schedule` — Save show schedule + Auto-DJ settings
+- `GET /api/radio/schedule?stationId=xxx` — Fetch schedule
+- `POST /api/radio/station` — Create/update station (multi-track)
+- `GET /api/radio/station/now?stationId=xxx` — Auto-DJ now playing
+- `POST /api/live/session` — Provision live channel (returns RTMP URL + stream key)
+- `POST /api/content/import-drive` — Import from Google Drive
 
 ## Firestore Collections
-- `users/{uid}` — user profiles (with socialLinks, driveLinked fields)
+- `users/{uid}` — profiles (socialLinks, driveLinked, bio, avatarUrl)
 - `creators/{uid}` — creator channels
-- `content/{contentId}` — media items
-- `radioStations/{stationId}` — radio stations (with artworkUrl, description)
-- `liveChannels/{channelId}` — active live sessions (with streamKey)
+- `content/{contentId}` — media items (status: QUEUED|PROCESSING|READY)
+- `radioStations/{stationId}` — stations (tracks[], schedule[], autoDjEnabled, autoDjShuffle)
+- `liveChannels/{channelId}` — live sessions (streamKey, ingestUrl)
 - `follows/{followerId_creatorId}` — follow relationships
-- `notifications/{userId}/items/{id}` — user notifications
-- `liveChats/{channelId}/messages/{id}` — live chat messages
+- `notifications/{userId}/items/{id}` — notifications
+- `liveChats/{channelId}/messages/{id}` — live chat
 
 ## P1/P2 Backlog
 - **P1**: Stripe Connect for tips/ticketed premieres (future add-on)
-- **P2**: Show scheduling and Auto-DJ functionality
-- **Future**: Native mobile apps (iOS/Android)
+- **P2**: Show scheduling live DJ handoff (scheduled show creator goes live during their slot)
+- **Future**: Server-side HLS stream generation for radio (FFmpeg on worker)

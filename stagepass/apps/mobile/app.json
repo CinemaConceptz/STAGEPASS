@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "STAGEPASS",
+    "slug": "stagepass",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "stagepass",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2E1A47"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.stagepass.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "STAGEPASS needs microphone access for live broadcasting.",
+        "NSCameraUsageDescription": "STAGEPASS needs camera access for live broadcasting."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2E1A47"
+      },
+      "package": "com.stagepass.app",
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}
