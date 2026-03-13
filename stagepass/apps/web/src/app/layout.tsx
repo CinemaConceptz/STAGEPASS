@@ -15,7 +15,6 @@ export const metadata = {
     shortcut: "/icon-192.png",
     apple: "/icon-192.png",
   },
-  themeColor: "#0A0A0A",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent" as const,
@@ -28,6 +27,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#0A0A0A",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
