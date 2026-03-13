@@ -1,75 +1,79 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { isFollowing, followCreator, unfollowCreator } from "@/lib/firebase/firestore";
 import { UserPlus, UserCheck, Loader } from "lucide-react";
 
-interface FollowButtonProps {
+interface Props {
   creatorId: string;
-  onToggle?: (following: boolean) => void;
+  initialFollowing?: boolean;
+  initialCount?: number;
+  className?: string;
 }
 
-export default function FollowButton({ creatorId, onToggle }: FollowButtonProps) {
+export default function FollowButton({ creatorId, initialFollowing = false, initialCount = 0, className = "" }: Props) {
   const { user } = useAuth();
-  const [following, setFollowing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [following, setFollowing] = useState(initialFollowing);
+  const [count, setCount] = useState(initialCount);
+  const [loading, setLoading] = useState(false);
+  const [checked, setChecked] = useState(false);
 
+  // Fetch current follow status from server API
   useEffect(() => {
-    if (!user || !creatorId) { setLoading(false); return; }
-    isFollowing(user.uid, creatorId).then(f => {
-      setFollowing(f);
-      setLoading(false);
-    });
+    if (!user || !creatorId) return;
+    user.getIdToken().then(token =>
+      fetch(`/api/follow/${creatorId}`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => {
+          setFollowing(d.following ?? false);
+          setCount(d.followerCount ?? initialCount);
+          setChecked(true);
+        })
+        .catch(() => setChecked(true))
+    );
   }, [user, creatorId]);
 
-  const handleToggle = async () => {
-    if (!user) { window.location.href = "/login"; return; }
-    setSaving(true);
+  const toggle = useCallback(async () => {
+    if (!user || loading) return;
+    setLoading(true);
     try {
-      if (following) {
-        await unfollowCreator(user.uid, creatorId);
-      } else {
-        await followCreator(user.uid, creatorId);
+      const token = await user.getIdToken();
+      const method = following ? "DELETE" : "POST";
+      const res = await fetch(`/api/follow/${creatorId}`, {
+        method,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success !== false) {
+        setFollowing(!following);
+        setCount(c => following ? Math.max(0, c - 1) : c + 1);
       }
-      const newState = !following;
-      setFollowing(newState);
-      onToggle?.(newState);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
-  };
+    } catch { /* silent */ }
+    setLoading(false);
+  }, [user, creatorId, following, loading]);
 
   if (!user || user.uid === creatorId) return null;
 
-  if (loading) {
-    return (
-      <div className="h-9 w-24 rounded-full bg-white/10 animate-pulse" />
-    );
-  }
-
   return (
     <button
-      onClick={handleToggle}
-      disabled={saving}
+      onClick={toggle}
+      disabled={loading || !checked}
       data-testid="follow-button"
-      className={`flex items-center gap-2 px-5 py-2 rounded-full text-sm font-bold transition-all disabled:opacity-60 ${
-        following
-          ? "bg-white/10 border border-white/20 text-white hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-400"
-          : "bg-stage-indigo text-white shadow-glowIndigo hover:bg-stage-indigo/80 hover:scale-105"
-      }`}
+      className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all
+        ${following
+          ? "bg-white/10 border border-white/20 text-white hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400"
+          : "bg-stage-mint text-black hover:bg-stage-mint/90"
+        } ${loading ? "opacity-60 cursor-not-allowed" : ""} ${className}`}
     >
-      {saving ? (
-        <Loader size={15} className="animate-spin" />
+      {loading ? (
+        <Loader size={14} className="animate-spin" />
       ) : following ? (
-        <UserCheck size={15} />
+        <UserCheck size={14} />
       ) : (
-        <UserPlus size={15} />
+        <UserPlus size={14} />
       )}
-      {saving ? "..." : following ? "Following" : "Follow"}
+      {following ? "Following" : "Follow"}
+      {count > 0 && <span className="opacity-60 font-normal">{count.toLocaleString()}</span>}
     </button>
   );
 }

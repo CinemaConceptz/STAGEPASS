@@ -4,6 +4,7 @@ export interface Track {
   artist?: string;
   durationMs: number;
   url: string;
+  mood?: string; // Chill | Hype | Deep | Smooth | Energy
 }
 
 export interface ScheduleSlot {
@@ -28,19 +29,25 @@ export interface StationState {
 }
 
 // ─── Auto-DJ: get current track in infinite loop ────────────────────────────
-export function getNowPlaying(tracks: Track[], shuffle?: boolean): StationState | null {
+export function getNowPlaying(
+  tracks: Track[],
+  shuffle?: boolean,
+  moodFilter?: string[]
+): StationState | null {
   if (!tracks.length) return null;
 
-  const totalDuration = tracks.reduce((acc, t) => acc + (t.durationMs || 180000), 0);
+  // Apply mood filter — fall back to all tracks if filter yields nothing
+  const pool = moodFilter?.length
+    ? (tracks.filter(t => moodFilter.includes(t.mood || "")) || [])
+    : tracks;
+  const totalDuration = orderedRaw.reduce((acc, t) => acc + (t.durationMs || 180000), 0);
   if (totalDuration === 0) return null;
 
-  // Epoch sync ensures all listeners hear the same track at the same time
   const epoch = new Date("2026-01-01T00:00:00Z").getTime();
   const now = Date.now();
   const elapsed = now - epoch;
 
-  // If shuffle, use a deterministic shuffle based on the day
-  let orderedTracks = [...tracks];
+  let orderedTracks = [...orderedRaw];
   if (shuffle) {
     const daySeed = Math.floor(elapsed / 86400000);
     orderedTracks = deterministicShuffle(orderedTracks, daySeed);

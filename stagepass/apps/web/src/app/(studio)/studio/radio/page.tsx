@@ -10,6 +10,15 @@ import { auth } from "@/lib/firebase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+const MOODS = ["Chill", "Hype", "Deep", "Smooth", "Energy"] as const;
+const MOOD_COLORS: Record<string, string> = {
+  Chill: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  Hype: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  Deep: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  Smooth: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  Energy: "bg-red-500/20 text-red-300 border-red-500/30",
+};
+
 export default function RadioStudio() {
   const router = useRouter();
   const [stationName, setStationName] = useState("");
@@ -17,6 +26,7 @@ export default function RadioStudio() {
   const [desc, setDesc] = useState("");
   const [artworkData, setArtworkData] = useState("");
   const [audioFiles, setAudioFiles] = useState<DriveFile[]>([]);
+  const [trackMoods, setTrackMoods] = useState<Record<string, string>>({}); // fileId → mood
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -57,6 +67,7 @@ export default function RadioStudio() {
             driveFileId: f.id,
             driveFileName: f.name,
             mimeType: f.mimeType,
+            mood: trackMoods[f.id] || "",
           })),
           token: audioFiles[0].token,
         }),
@@ -176,29 +187,33 @@ export default function RadioStudio() {
               </button>
             </div>
             {audioFiles.map((file, idx) => (
-              <div
-                key={file.id}
-                className="flex items-center gap-3 p-3 bg-black/30 rounded-xl group"
-                data-testid={`radio-track-${idx}`}
-              >
-                <button
-                  onClick={() => toggleFile(file.id)}
-                  className="shrink-0"
-                  data-testid={`radio-track-checkbox-${idx}`}
-                >
-                  <CheckSquare size={18} className="text-stage-mint" />
-                </button>
-                <Music size={16} className="text-stage-mint shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{file.name}</p>
-                  <p className="text-xs text-stage-mutetext">{file.mimeType}</p>
+              <div key={file.id} className="p-3 bg-black/30 rounded-xl group space-y-2" data-testid={`radio-track-${idx}`}>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => toggleFile(file.id)} className="shrink-0" data-testid={`radio-track-checkbox-${idx}`}>
+                    <CheckSquare size={18} className="text-stage-mint" />
+                  </button>
+                  <Music size={16} className="text-stage-mint shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{file.name}</p>
+                    <p className="text-xs text-stage-mutetext">{file.mimeType}</p>
+                  </div>
+                  <button onClick={() => toggleFile(file.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-stage-mutetext hover:text-red-400">
+                    <X size={14} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => toggleFile(file.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-stage-mutetext hover:text-red-400"
-                >
-                  <X size={14} />
-                </button>
+                {/* Mood Tag Row */}
+                <div className="flex flex-wrap gap-1.5 pl-9">
+                  {MOODS.map(mood => {
+                    const active = trackMoods[file.id] === mood;
+                    return (
+                      <button key={mood}
+                        onClick={() => setTrackMoods(prev => ({ ...prev, [file.id]: active ? "" : mood }))}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all ${active ? MOOD_COLORS[mood] : "bg-white/5 text-white/30 border-white/10 hover:bg-white/10"}`}>
+                        {mood}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </div>

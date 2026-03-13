@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import ScheduleGrid from "@/components/radio/ScheduleGrid";
-import { Play, Music2, Pause, Volume2, VolumeX, Star, Radio, Headphones, SkipForward, Shuffle, Calendar, Zap } from "lucide-react";
-import { collection, getDocs, query, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { Play, Music2, Pause, Volume2, VolumeX, Radio, Headphones, SkipForward, Calendar, Layers } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ScheduleSlot, getActiveScheduleSlot } from "@/lib/radio/scheduler";
 
@@ -23,6 +21,9 @@ interface RadioStation {
   schedule?: ScheduleSlot[];
   autoDjEnabled?: boolean;
   autoDjShuffle?: boolean;
+  crossfadeEnabled?: boolean;
+  crossfadeDuration?: number;
+  moodFilter?: string[];
 }
 
 export default function RadioPage() {
@@ -30,72 +31,155 @@ export default function RadioPage() {
   const [stations, setStations] = useState<RadioStation[]>([]);
   const [activeStation, setActiveStation] = useState<string | null>(null);
   const [nowPlaying, setNowPlaying] = useState<any>(null);
+  const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [expandedSchedule, setExpandedSchedule] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [crossfading, setCrossfading] = useState(false);
 
-  const featuredStation = stations.find(s => s.featured) || stations[0];
-  const regularStations = stations.filter(s => s.id !== featuredStation?.id);
+  // ── Dual-audio crossfade engine ──────────────────────────────────────────
+  const audioA = useRef<HTMLAudioElement | null>(null);
+  const audioB = useRef<HTMLAudioElement | null>(null);
+  const activeRef = useRef<"A" | "B">("A");
+  const nowRef = useRef<any>(null);
+  const stationIdRef = useRef<string | null>(null);
+  const stationsRef = useRef<RadioStation[]>([]);
+  const crossfadingRef = useRef(false);
+  const fadeSecsRef = useRef(0);
+  const mutedRef = useRef(false);
+  const fadeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    const fetchStations = async () => {
-      if (!db) { setLoading(false); return; }
-      try {
-        const q = query(collection(db, "radioStations"), limit(20));
-        const snap = await Promise.race([
-          getDocs(q),
-          new Promise<any>((resolve) => setTimeout(() => resolve({ docs: [] }), 8000))
-        ]);
-        setStations(snap.docs.map((d: any) => ({ id: d.id, ...d.data() })));
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    };
-    fetchStations();
+  useEffect(() => { stationsRef.current = stations; }, [stations]);
+
+  const getActive = () => activeRef.current === "A" ? audioA.current : audioB.current;
+  const getIdle = () => activeRef.current === "A" ? audioB.current : audioA.current;
+
+  const fetchNowPlaying = useCallback(async (stationId: string) => {
+    try {
+      const res = await fetch(`/api/radio/station/now?stationId=${stationId}`);
+      const data = await res.json();
+      if (!data.success || !data.nowPlaying) return;
+      const st = stationsRef.current.find(s => s.id === stationId);
+      const slot = st?.schedule ? getActiveScheduleSlot(st.schedule) : null;
+      const np = { ...data.nowPlaying, stationName: st?.name, showName: slot?.showName, mode: slot ? "SCHEDULED" : "AUTO_DJ" };
+      setNowPlaying(np);
+      nowRef.current = np;
+    } catch { /* silent */ }
   }, []);
 
-  const playStation = async (id: string) => {
-    if (activeStation === id) {
-      audioRef.current?.pause();
-      setActiveStation(null);
-      setNowPlaying(null);
+  const beginCrossfade = useCallback(() => {
+    if (crossfadingRef.current || !nowRef.current?.nextTrack) return;
+    crossfadingRef.current = true;
+    setCrossfading(true);
+    const current = getActive();
+    const idle = getIdle();
+    if (!current || !idle) { crossfadingRef.current = false; setCrossfading(false); return; }
+    idle.src = nowRef.current.nextTrack.url;
+    idle.volume = 0;
+    idle.muted = mutedRef.current;
+    idle.play().catch(() => { crossfadingRef.current = false; setCrossfading(false); });
+    const STEPS = 30;
+    const stepMs = (fadeSecsRef.current * 1000) / STEPS;
+    let step = 0;
+    if (fadeTimerRef.current) clearInterval(fadeTimerRef.current);
+    fadeTimerRef.current = setInterval(() => {
+      step++;
+      if (current) current.volume = Math.max(0, 1 - step / STEPS);
+      idle.volume = Math.min(1, step / STEPS);
+      if (step >= STEPS) {
+        clearInterval(fadeTimerRef.current!);
+        if (current) { current.pause(); current.src = ""; current.volume = 1; }
+        activeRef.current = activeRef.current === "A" ? "B" : "A";
+        crossfadingRef.current = false;
+        setCrossfading(false);
+        if (stationIdRef.current) fetchNowPlaying(stationIdRef.current);
+      }
+    }, stepMs);
+  }, [fetchNowPlaying]);
+
+  // Setup audio elements on mount
+  useEffect(() => {
+    audioA.current = new Audio();
+    audioB.current = new Audio();
+    const onTimeUpdate = (audio: HTMLAudioElement) => {
+      if (crossfadingRef.current || !nowRef.current?.nextTrack || fadeSecsRef.current <= 0) return;
+      if (isNaN(audio.duration) || audio.duration <= 0) return;
+      const rem = audio.duration - audio.currentTime;
+      if (rem > 0 && rem <= fadeSecsRef.current + 0.5) beginCrossfade();
+    };
+    const onEnded = () => { if (!crossfadingRef.current && stationIdRef.current) playStation(stationIdRef.current, true); };
+    audioA.current.addEventListener("timeupdate", () => onTimeUpdate(audioA.current!));
+    audioB.current.addEventListener("timeupdate", () => onTimeUpdate(audioB.current!));
+    audioA.current.addEventListener("ended", onEnded);
+    audioB.current.addEventListener("ended", onEnded);
+    return () => { audioA.current?.pause(); audioB.current?.pause(); };
+  }, [beginCrossfade]);
+
+  useEffect(() => {
+    mutedRef.current = muted;
+    const a = getActive();
+    if (a) a.muted = muted;
+  }, [muted]);
+
+  const playStation = useCallback(async (id: string, resume = false) => {
+    if (!resume && activeStation === id) {
+      const a = getActive();
+      if (playing) { a?.pause(); setPlaying(false); } else { a?.play().catch(() => {}); setPlaying(true); }
       return;
     }
-
-    setActiveStation(id);
+    if (!resume) {
+      if (fadeTimerRef.current) clearInterval(fadeTimerRef.current);
+      audioA.current?.pause(); audioB.current?.pause();
+      if (audioA.current) { audioA.current.src = ""; audioA.current.volume = 1; }
+      if (audioB.current) { audioB.current.src = ""; audioB.current.volume = 1; }
+      activeRef.current = "A";
+      crossfadingRef.current = false;
+      stationIdRef.current = id;
+      const st = stationsRef.current.find(s => s.id === id);
+      fadeSecsRef.current = st?.crossfadeEnabled ? (st.crossfadeDuration ?? 3) : 0;
+      setActiveStation(id);
+      setNowPlaying(null);
+      setPlaying(false);
+    }
     try {
       const res = await fetch(`/api/radio/station/now?stationId=${id}`);
       const data = await res.json();
-      if (data.success && data.nowPlaying) {
-        const station = stations.find(s => s.id === id);
-        const activeSlot = station?.schedule ? getActiveScheduleSlot(station.schedule) : null;
-        setNowPlaying({
-          ...data.nowPlaying,
-          stationName: station?.name,
-          showName: activeSlot?.showName,
-          mode: activeSlot ? "SCHEDULED" : "AUTO_DJ",
-        });
-        if (audioRef.current) {
-          audioRef.current.src = data.nowPlaying.track.url;
-          const offsetSec = data.nowPlaying.offsetMs / 1000;
-          audioRef.current.currentTime = offsetSec;
-          audioRef.current.play();
-        }
+      if (!data.success || !data.nowPlaying) return;
+      const st = stationsRef.current.find(s => s.id === id);
+      const slot = st?.schedule ? getActiveScheduleSlot(st.schedule) : null;
+      const np = { ...data.nowPlaying, stationName: st?.name, showName: slot?.showName, mode: slot ? "SCHEDULED" : "AUTO_DJ" };
+      setNowPlaying(np);
+      nowRef.current = np;
+      if (!resume) {
+        const audio = getActive()!;
+        audio.src = data.nowPlaying.track.url;
+        audio.currentTime = data.nowPlaying.offsetMs / 1000;
+        audio.volume = 1;
+        audio.muted = mutedRef.current;
+        await audio.play().catch(() => {});
+        setPlaying(true);
       }
-    } catch (e) { console.error(e); }
-  };
+    } catch { /* silent */ }
+  }, [activeStation, playing]);
 
-  const skipTrack = () => {
-    if (activeStation && nowPlaying?.nextTrack) {
-      setNowPlaying((prev: any) => ({ ...prev, track: prev.nextTrack }));
-      if (audioRef.current) {
-        audioRef.current.src = nowPlaying.nextTrack.url;
-        audioRef.current.play();
-      }
-    }
-  };
+  const skipTrack = useCallback(() => {
+    if (!nowRef.current?.nextTrack) return;
+    if (fadeSecsRef.current > 0) { beginCrossfade(); return; }
+    const audio = getActive();
+    if (audio) { audio.src = nowRef.current.nextTrack.url; audio.currentTime = 0; audio.volume = 1; audio.play().catch(() => {}); }
+    if (stationIdRef.current) fetchNowPlaying(stationIdRef.current);
+  }, [beginCrossfade, fetchNowPlaying]);
 
-  return (
+  // Fetch stations via Admin SDK server API (bypasses Firestore security rules)
+  useEffect(() => {
+    fetch("/api/radio/stations")
+      .then(r => r.json())
+      .then(d => { setStations(d.stations || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const featuredStation = stations.find(s => s.featured) || stations[0];
+  const regularStations = stations.filter(s => s.id !== featuredStation?.id);
     <div className="max-w-7xl mx-auto space-y-12 py-8">
       {/* Header */}
       <div className="text-center space-y-4">

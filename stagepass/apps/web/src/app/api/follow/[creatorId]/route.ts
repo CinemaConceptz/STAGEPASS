@@ -14,6 +14,24 @@ async function getUid(req: Request): Promise<string | null> {
   } catch { return null; }
 }
 
+export async function GET(req: Request, { params }: { params: { creatorId: string } }) {
+  const uid = await getUid(req);
+  if (!uid) return NextResponse.json({ following: false, followerCount: 0 });
+
+  const { creatorId } = params;
+  const db = getFirestore(adminApp);
+
+  const [followSnap, creatorSnap] = await Promise.all([
+    db.collection("follows").doc(`${uid}_${creatorId}`).get(),
+    db.collection("creators").doc(creatorId).get(),
+  ]);
+
+  return NextResponse.json({
+    following: followSnap.exists,
+    followerCount: creatorSnap.data()?.followerCount || 0,
+  });
+}
+
 export async function POST(req: Request, { params }: { params: { creatorId: string } }) {
   const uid = await getUid(req);
   if (!uid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

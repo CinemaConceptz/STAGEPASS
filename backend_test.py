@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 
 class StagepassAPITester:
-    def __init__(self, base_url="https://auto-dj-platform.preview.emergentagent.com"):
+    def __init__(self, base_url="https://crossfade-dj.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0

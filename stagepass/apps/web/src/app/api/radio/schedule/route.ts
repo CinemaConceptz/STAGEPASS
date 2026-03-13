@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { stationId, userId, schedule, autoDjEnabled, autoDjShuffle } = body;
+    const { stationId, userId, schedule, autoDjEnabled, autoDjShuffle, crossfadeEnabled, crossfadeDuration, moodFilter } = body;
 
     if (!stationId || !userId) {
       return NextResponse.json({ error: "Missing stationId or userId" }, { status: 400 });
@@ -59,6 +59,9 @@ export async function POST(req: Request) {
       schedule: schedule || [],
       autoDjEnabled: autoDjEnabled !== false,
       autoDjShuffle: autoDjShuffle || false,
+      crossfadeEnabled: crossfadeEnabled ?? false,
+      crossfadeDuration: crossfadeDuration ?? 3,
+      moodFilter: moodFilter ?? [],
       updatedAt: new Date().toISOString(),
     });
 

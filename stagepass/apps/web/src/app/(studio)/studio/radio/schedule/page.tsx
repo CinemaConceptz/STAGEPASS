@@ -4,11 +4,19 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Calendar, Clock, Plus, Trash2, Save, CheckCircle, Shuffle } from "lucide-react";
+import { Calendar, Clock, Plus, Trash2, Save, CheckCircle, Shuffle, Layers, Music2 } from "lucide-react";
 import { ScheduleSlot, DAY_NAMES, formatTime } from "@/lib/radio/scheduler";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MINUTES = [0, 30];
+const MOODS = ["Chill", "Hype", "Deep", "Smooth", "Energy"] as const;
+const MOOD_COLORS: Record<string, string> = {
+  Chill: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  Hype: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  Deep: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  Smooth: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  Energy: "bg-red-500/20 text-red-300 border-red-500/30",
+};
 
 function generateId() {
   return `slot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -19,6 +27,9 @@ export default function ScheduleEditor() {
   const [schedule, setSchedule] = useState<ScheduleSlot[]>([]);
   const [autoDjEnabled, setAutoDjEnabled] = useState(true);
   const [autoDjShuffle, setAutoDjShuffle] = useState(false);
+  const [crossfadeEnabled, setCrossfadeEnabled] = useState(false);
+  const [crossfadeDuration, setCrossfadeDuration] = useState(3);
+  const [moodFilter, setMoodFilter] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -32,6 +43,9 @@ export default function ScheduleEditor() {
           setSchedule(data.schedule || []);
           setAutoDjEnabled(data.autoDj?.enabled !== false);
           setAutoDjShuffle(data.autoDj?.shuffle || false);
+          setCrossfadeEnabled(data.autoDj?.crossfadeEnabled ?? false);
+          setCrossfadeDuration(data.autoDj?.crossfadeDuration ?? 3);
+          setMoodFilter(data.autoDj?.moodFilter ?? []);
         }
         setLoading(false);
       })
@@ -77,6 +91,9 @@ export default function ScheduleEditor() {
           schedule,
           autoDjEnabled,
           autoDjShuffle,
+          crossfadeEnabled,
+          crossfadeDuration,
+          moodFilter,
         }),
       });
       const data = await res.json();
@@ -116,28 +133,74 @@ export default function ScheduleEditor() {
         <p className="text-sm text-stage-mutetext">
           Auto-DJ plays your uploaded tracks automatically when no scheduled show is live.
         </p>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-6">
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoDjEnabled}
-              onChange={(e) => setAutoDjEnabled(e.target.checked)}
+            <input type="checkbox" checked={autoDjEnabled} onChange={(e) => setAutoDjEnabled(e.target.checked)}
               className="h-5 w-5 rounded border-white/20 bg-stage-bg text-stage-mint focus:ring-stage-mint accent-[#00FFC6]"
-              data-testid="autodj-enabled"
-            />
+              data-testid="autodj-enabled" />
             <span className="text-sm font-medium">Enable Auto-DJ</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoDjShuffle}
-              onChange={(e) => setAutoDjShuffle(e.target.checked)}
+            <input type="checkbox" checked={autoDjShuffle} onChange={(e) => setAutoDjShuffle(e.target.checked)}
               className="h-5 w-5 rounded border-white/20 bg-stage-bg text-stage-mint focus:ring-stage-mint accent-[#00FFC6]"
-              data-testid="autodj-shuffle"
-            />
+              data-testid="autodj-shuffle" />
             <Shuffle size={16} className="text-stage-mutetext" />
             <span className="text-sm font-medium">Shuffle Mode</span>
           </label>
+        </div>
+
+        {/* Crossfade Settings */}
+        <div className="border-t border-white/10 pt-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers size={16} className="text-stage-mint" />
+              <span className="text-sm font-medium">Crossfade Transitions</span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" checked={crossfadeEnabled} onChange={e => setCrossfadeEnabled(e.target.checked)}
+                className="sr-only peer" data-testid="crossfade-toggle" />
+              <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-stage-mint transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+            </label>
+          </div>
+          {crossfadeEnabled && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-stage-mutetext">Fade Duration</span>
+                <span className="text-stage-mint font-bold">{crossfadeDuration}s</span>
+              </div>
+              <input type="range" min={1} max={8} step={1} value={crossfadeDuration}
+                onChange={e => setCrossfadeDuration(Number(e.target.value))}
+                className="w-full h-1.5 bg-white/10 rounded-full appearance-none accent-[#00FFC6] cursor-pointer"
+                data-testid="crossfade-duration" />
+              <div className="flex justify-between text-xs text-stage-mutetext">
+                <span>1s (quick cut)</span><span>4s (smooth)</span><span>8s (slow blend)</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Mood Filter */}
+        <div className="border-t border-white/10 pt-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Music2 size={16} className="text-stage-mint" />
+            <span className="text-sm font-medium">Mood Filter</span>
+            <span className="text-xs text-stage-mutetext ml-1">(empty = play all tracks)</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {MOODS.map(mood => {
+              const active = moodFilter.includes(mood);
+              return (
+                <button key={mood} data-testid={`mood-filter-${mood.toLowerCase()}`}
+                  onClick={() => setMoodFilter(prev => active ? prev.filter(m => m !== mood) : [...prev, mood])}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${active ? MOOD_COLORS[mood] : "bg-white/5 text-stage-mutetext border-white/10 hover:bg-white/10"}`}>
+                  {mood}
+                </button>
+              );
+            })}
+          </div>
+          {moodFilter.length > 0 && (
+            <p className="text-xs text-stage-mutetext">Only tracks tagged <strong className="text-white">{moodFilter.join(", ")}</strong> will play in Auto-DJ mode.</p>
+          )}
         </div>
       </div>
 
