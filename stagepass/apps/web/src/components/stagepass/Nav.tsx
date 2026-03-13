@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { User, LogOut } from "lucide-react";
 import { signOut } from "firebase/auth";
@@ -33,8 +34,8 @@ export default function Nav() {
     <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-stage-bg/80 backdrop-blur-md" data-testid="nav-header">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 h-16">
         <Link href="/" className="flex items-center gap-3 group" data-testid="nav-logo">
-          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-stage-mint/20 shadow-glowMint group-hover:scale-105 transition-transform bg-stage-panel flex items-center justify-center">
-            <span className="text-lg font-black text-stage-mint">S</span>
+          <div className="relative h-10 w-10 overflow-hidden rounded-full border border-stage-mint/20 shadow-glowMint group-hover:scale-105 transition-transform">
+            <Image src="/logo.jpg" alt="StagePass" fill className="object-cover" />
           </div>
           <span className="text-lg font-bold tracking-wider">
             STAGE<span className="text-stage-indigo">PASS</span>

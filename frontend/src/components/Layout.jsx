@@ -24,8 +24,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     )}>
       <div className="flex h-20 items-center justify-between px-6 border-b border-white/5">
         <Link to="/" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="font-heading font-bold text-white text-lg">S</span>
+          <div className="w-8 h-8 rounded-full overflow-hidden">
+            <img src="/logo.jpg" alt="StagePass" className="w-full h-full object-cover" />
           </div>
           <span className="font-heading font-bold text-xl tracking-wider">STAGEPASS</span>
         </Link>
@@ -55,11 +55,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         ))}
       </nav>
 
-      <div className="absolute bottom-0 w-full p-4 border-t border-white/5 bg-[#0A0A0A]">
+      <div className="absolute bottom-0 w-full p-4 border-t border-white/5 bg-[#0A0A0A] space-y-2">
         <Link to="/settings" className="flex items-center space-x-3 px-4 py-3 text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
           <Settings size={20} />
           <span>Settings</span>
         </Link>
+        <button 
+          onClick={() => { alert('Signed out'); }}
+          className="flex items-center space-x-3 px-4 py-3 text-zinc-400 hover:text-red-400 hover:bg-red-500/5 rounded-xl transition-all w-full"
+          data-testid="sidebar-signout-btn"
+        >
+          <LogOut size={20} />
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
   );
