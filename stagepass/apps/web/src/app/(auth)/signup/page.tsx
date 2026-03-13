@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase/client";
+import { auth } from "@/lib/firebase/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Eye, EyeOff, CheckSquare, Square, ExternalLink } from "lucide-react";
@@ -30,32 +29,19 @@ export default function SignupPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const generateSlug = (name: string) => {
-    return name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
-  };
-
-  const createUserDocs = async (uid: string, email: string, displayName: string, creatorType: string) => {
-    if (!db) return;
-    const slug = generateSlug(displayName);
-    await setDoc(doc(db, "users", uid), {
-      uid,
-      email,
-      displayName,
-      username: slug,
-      creatorType,
-      roles: ["creator"],
-      socialLinks: {},
-      driveLinked: false,
-      createdAt: new Date().toISOString()
+  const createUserDocs = async (uid: string, email: string, displayName: string, creatorType: string, idToken: string) => {
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ displayName, creatorType, email }),
     });
-    await setDoc(doc(db, "creators", uid), {
-      ownerUid: uid,
-      slug,
-      displayName,
-      type: creatorType,
-      verified: false,
-      followers: 0
-    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to create profile");
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -65,7 +51,8 @@ export default function SignupPage() {
     try {
       const userCred = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       await updateProfile(userCred.user, { displayName: formData.displayName });
-      await createUserDocs(userCred.user.uid, formData.email, formData.displayName, formData.creatorType);
+      const idToken = await userCred.user.getIdToken();
+      await createUserDocs(userCred.user.uid, formData.email, formData.displayName, formData.creatorType, idToken);
       router.push("/studio");
     } catch (err: any) {
       if (err.code === "auth/email-already-in-use") {
@@ -87,7 +74,8 @@ export default function SignupPage() {
       provider.addScope("https://www.googleapis.com/auth/drive.readonly");
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      await createUserDocs(user.uid, user.email || "", user.displayName || "Creator", "MUSIC");
+      const idToken = await user.getIdToken();
+      await createUserDocs(user.uid, user.email || "", user.displayName || "Creator", "MUSIC", idToken);
       router.push("/studio");
     } catch (err: any) {
       setError(err.message || "Google sign-up failed.");

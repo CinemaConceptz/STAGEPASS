@@ -37,6 +37,7 @@ apps/
 - **Mood filter**: Auto-DJ can filter tracks by mood tags, falls back to all tracks if filter yields empty
 - **Follow system**: FollowButton component with follow/unfollow toggle, follower count, onToggle callback
 - **Notifications**: NotificationBell with polling (30s), mark-all-read, notification dropdown
+- **Signup fix**: Moved user/creator profile creation from client-side Firestore `setDoc` to server-side `/api/auth/signup` (Admin SDK), fixing "Missing or insufficient permissions" error
 - **Comments system**: Replaced LiveChat with Comments on recorded video pages (GET/POST /api/comments/[contentId])
 - **Play icon fix**: ContentCard play icons now vibrant (gradient bg, stage-mint hover, larger button)
 - **Hero play icon**: Updated from barely-visible to prominent stage-mint styled icon
