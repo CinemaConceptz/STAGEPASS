@@ -1,116 +1,96 @@
-# STAGEPASS — Production Architecture & PRD
+# STAGEPASS — Production PRD
 
 ## Problem Statement
-Creator ecosystem platform "STAGEPASS" on Google Cloud. Allows creators to upload videos,
-live stream, create radio stations, and build an audience. Creator-controlled visibility 
-(chronological feeds, no algorithm suppression).
+Creator ecosystem platform "STAGEPASS" on Google Cloud. Creators upload videos,
+live stream, create radio stations, and build audiences. Creator-controlled visibility.
 
-## Service Architecture (4-Service Production)
+## Architecture
 ```
 apps/
-├── web/      # Next.js 14 — Frontend (Cloud Run stagepass-web)
-├── api/      # Express.js — Business Logic (Cloud Run stagepass-api)
-├── worker/   # Express.js — Media Processing (Cloud Run stagepass-worker)
-└── mobile/   # React Native (Expo) — iOS & Android native apps
+├── web/      # Next.js 14 — All API routes + Frontend (Cloud Run)
+├── api/      # Express.js — Legacy routes (Cloud Run)
+├── worker/   # Express.js — FFmpeg HLS, transcode (Cloud Run)
+└── mobile/   # React Native (Expo) — iOS & Android
 ```
+
+**Key pattern:** ALL Firestore access goes through Next.js API routes using Firebase Admin SDK (bypasses security rules). NO client-side Firestore reads/writes.
 
 ## Completed Features
 
-### Live Stream RTMP Fix (March 2026)
-- Fixed critical bug: stream key was hardcoded as `"live"` — now correctly extracted from GCP inputUri
-- OBS instructions updated: added warning to NOT use Auto-Configuration Wizard
-- Added `/api/admin/claim` for first-time admin self-promotion
-- Added "Admin Access" section on Profile page
+### Core Platform
+- Auth: Google Sign-In, Email/Password
+- Profile: name, bio, avatar, social links, Google Drive link (all via /api/profile)
+- Content feed, explore, creator pages
+- PWA: manifest.json, icons, installable
 
-### Show Scheduling & Auto-DJ
-- Weekly schedule editor (day/time slots, show name, description)
-- Auto-DJ: client-side sequential playback, epoch-synced (all listeners hear same track)
-- Deterministic shuffle mode (same shuffle order per day for all listeners)
-- Schedule API: GET/POST /api/radio/schedule
-- ScheduleGrid component shows active show, upcoming shows, weekly grid
-- Mini player with skip track, mute, Auto-DJ/Scheduled mode indicator
+### Media Pipeline
+- Drive import: fetches **Drive API thumbnailLink** for thumbnails + stores **drivePreviewUrl** for playback fallback
+- Player: HLS → signed GCS URL → Drive iframe preview fallback → "Processing" state
+- Pub/Sub triggers worker for async transcoding
 
-### Advanced Social + Crossfade (March 2026) ✅
-- **Dual-audio crossfade engine**: Two HTMLAudioElement instances (audioA/audioB) with volume fade transitions
-- **Crossfade settings**: Toggle enable/disable, configurable duration (1-8s) per station
-- **Mood tagging**: Creators can tag uploaded content with moods (Chill, Hype, Deep, Smooth, Energy)
-- **Mood filter**: Auto-DJ can filter tracks by mood tags, falls back to all tracks if filter yields empty
-- **Follow system**: FollowButton component with follow/unfollow toggle, follower count, onToggle callback
-- **Notifications**: NotificationBell with polling (30s), mark-all-read, notification dropdown
-- **Signup fix**: Moved user/creator profile creation from client-side Firestore `setDoc` to server-side `/api/auth/signup` (Admin SDK), fixing "Missing or insufficient permissions" error
-- **Profile fix**: Moved profile reads/writes from client Firestore to server-side `/api/profile` GET/PUT (Admin SDK), fixing display name loading issue
-- **Player fix**: Added `driveFileId` prop with Google Drive iframe fallback when HLS/signed-url unavailable. Shows "processing" state instead of broken controls
-- **Upload fix**: Added "Upload Another" button after successful import to reset state
-- **Schedule fix**: Changed time increments from 30-min to 15-min (0, 15, 30, 45) + "Midnight (End of Day)" end time
-- **Radio station fix**: Generate HLS button now disabled until station is created. Track URLs include `driveUrl` fallback. Auto-DJ now uses Drive URLs when GCS files aren't available
-- **Comments system**: Replaced LiveChat with Comments on recorded video pages (GET/POST /api/comments/[contentId])
-- **Play icon fix**: ContentCard play icons now vibrant (gradient bg, stage-mint hover, larger button)
-- **Hero play icon**: Updated from barely-visible to prominent stage-mint styled icon
-- **Server-side APIs**: /api/follow/[creatorId], /api/notifications, /api/comments/[contentId]
-- **Scheduler fix**: Fixed critical `orderedRaw` undefined variable bug
-- **Radio page fix**: Added missing `return` statement, fixed imports, removed old audioRef
-- **Favicon**: Created SVG favicon (was 0-byte .ico)
+### Radio System
+- Station creation with Drive audio tracks (stores both GCS + driveUrl per track)
+- Auto-DJ: epoch-synced deterministic playback, shuffle mode, mood filter
+- Crossfade engine: dual-audio (audioA/audioB) with configurable fade duration
+- Schedule: 15-min intervals, "Midnight" end time, weekly grid
+- **Live DJ Handoff**: TAKE_OVER/RELEASE endpoints, station/now returns LIVE_DJ mode
+- **HLS Stream Generation**: worker call → PubSub → Firestore queue (3-tier fallback)
 
-### React Native Mobile App (Expo)
-- 6 screens: Feed, Radio, Live, Profile, Login, Signup
-- Bottom tab navigation, Firebase Auth with AsyncStorage persistence
-- EAS build configs for iOS/Android production builds
+### Live Streaming
+- RTMP provisioning with OBS-ready stream key
+- **Live Chat**: Server-side polling API (replaced broken client SDK subscription)
+- Stream status detection
 
-### Web App (Next.js 14)
-- Auth: Google Sign-In, Email/Password, privacy agreement
-- Profile: customizable (name, bio, avatar, social links, Google Drive, admin claim)
-- Radio: active stations grid, featured station, multi-track audio picker
-- Live: RTMP URL + Stream Key (OBS-ready split)
-- HLS Player: multi-quality ABR with quality selector
-- PWA: manifest.json, icons, mobile viewport, installable
-- Butler (Encore): Gemini AI assistant
-- Server-side data fetching via Admin SDK (bypasses Firestore security rules)
+### Social Features
+- Follow/unfollow with follower count
+- Notifications with 30s polling + mark-all-read
+- Comments on recorded videos (replaced LiveChat)
+- Mood tagging on uploads (Chill/Hype/Deep/Smooth/Energy)
 
-### API Service (Express.js)
-- Firebase ID token verification
-- Content CRUD, signed URLs, Drive import
-- Live session provisioning, Radio station management
-- Follow/Unfollow, Notifications, Analytics, Admin stats
+### AI Butler (Encore)
+- 3-tier fallback: Google API key → Vertex AI ADC → rule-based keyword matching
+- Actions: GO_LIVE, UPLOAD_VIDEO, RADIO_STATION, SHOW_ANALYTICS, NAVIGATE
 
-### Media Worker (Express.js)
-- Pub/Sub push endpoint for content processing
-- Drive → GCS transfer, Transcoder API (720p + 360p HLS)
+### Admin Dashboard
+- Server-side stats API (/api/admin/stats)
+- Content moderation (approve/reject)
+- Admin claim for first user
 
-## Key API Endpoints
-- `POST /api/auth/signup` — Create user/creator profile (Admin SDK)
-- `GET/PUT /api/profile` — Read/update user profile (Admin SDK)
-- `GET /api/content/feed` — Content feed (Admin SDK)
-- `GET /api/content/[id]` — Single content with driveFileId
-- `GET /api/content/[id]/signed-url` — Signed GCS URL for playback
-- `GET/POST /api/comments/[contentId]` — Comments on recorded videos
-- `GET/POST /api/live/chat/[channelId]` — Live chat (server-side, replaces client SDK)
-- `POST /api/radio/station` — Create/update radio station with driveUrl per track
-- `GET /api/radio/station/now?stationId=xxx` — Auto-DJ now playing (mood filter, LIVE_DJ mode)
-- `POST /api/radio/generate-stream` — HLS stream generation (worker → PubSub → Firestore queue)
-- `GET/POST /api/radio/dj-handoff` — Live DJ take over / release from Auto-DJ
-- `GET /api/radio/schedule?stationId=xxx` — Fetch schedule with crossfade/mood
-- `POST /api/radio/schedule` — Save schedule + Auto-DJ + crossfade + mood settings
-- `GET /api/radio/stations` — List all stations
+### Mobile Responsive
+- Sidebar: hidden on mobile, hamburger menu with overlay
+- Layout: md:ml-56 with pt-14 mobile topbar clearance
+- All pages: responsive grids, text sizes, button stacking
+
+### Infrastructure
+- **Health check**: GET /api/health tests Admin SDK + Firestore connectivity
+- **Admin SDK**: 3-tier init (service account cert → ADC → fallback) with logging
+- **Deploy script**: Grants permissions to BOTH App Engine + Compute SAs, includes firebase.admin role, post-deploy health check
+- SVG favicon
+
+## All API Endpoints
+- `POST /api/auth/signup` — Create user + creator profile
+- `GET/PUT /api/profile` — Read/update profile
+- `GET /api/health` — Backend connectivity check
+- `GET /api/content/feed` — Feed with drivePreviewUrl
+- `GET /api/content/[id]` — Single content
+- `GET /api/content/[id]/signed-url` — GCS signed URL
+- `POST /api/content/import-drive` — Drive import with thumbnail fetch
+- `GET/POST /api/comments/[contentId]` — Comments
+- `GET/POST /api/live/chat/[channelId]` — Live chat (server-side)
+- `POST /api/live/session` — Live stream provision
+- `POST /api/radio/station` — Create/update station
+- `GET /api/radio/stations` — List stations
+- `GET /api/radio/station/now` — Now playing (Auto-DJ/LIVE_DJ/SCHEDULED)
+- `POST /api/radio/generate-stream` — HLS generation
+- `GET/POST /api/radio/dj-handoff` — DJ take over/release
+- `GET/POST /api/radio/schedule` — Schedule management
 - `GET/POST/DELETE /api/follow/[creatorId]` — Follow system
-- `GET/POST /api/notifications` — Notification system
-- `POST /api/butler/resolve` — Encore AI (3-tier: API key → Vertex AI ADC → rule-based fallback)
-- `GET/PUT /api/admin/stats` — Admin dashboard stats + content status update
-- `POST /api/admin/claim` — First-user admin claim
-- `POST /api/live/session` — Provision live channel
-- `POST /api/content/import-drive` — Import from Google Drive
-
-## Firestore Collections
-- `users/{uid}` — profiles
-- `creators/{uid}` — creator channels (followerCount)
-- `content/{contentId}` — media items (mood tag)
-- `radioStations/{stationId}` — stations (crossfadeEnabled, crossfadeDuration, moodFilter)
-- `follows/{followerId_creatorId}` — follow relationships
-- `notifications/{userId}/items/{id}` — notifications
-- `liveChannels/{channelId}` — live sessions
-- `liveChats/{channelId}/messages/{id}` — live chat
+- `GET/POST /api/notifications` — Notifications
+- `POST /api/butler/resolve` — AI butler
+- `GET/PUT /api/admin/stats` — Admin dashboard
+- `POST /api/admin/claim` — Admin claim
 
 ## P1/P2 Backlog
-- **P1**: Stripe Connect for tips/ticketed premieres
-- **P2**: Show scheduling live DJ handoff
 - **P2**: Mobile app build & submission guide
-- **Future**: Server-side HLS stream generation for radio (FFmpeg on worker)
+- **Future**: Stripe Connect (user deferred)
+- **Future**: Content thumbnail generation via worker
