@@ -138,9 +138,12 @@ export async function getAllContent(): Promise<ContentItem[]> {
 export async function getLiveChannels(): Promise<any[]> {
   if (!db) return [];
   try {
-    const q = query(collection(db, "liveChannels"), where("status", "==", "LIVE"), orderBy("startedAt", "desc"), limit(10));
+    // Note: no orderBy to avoid requiring a composite Firestore index
+    const q = query(collection(db, "liveChannels"), where("status", "==", "LIVE"), limit(10));
     const snap = await withTimeout(getDocs(q), 8000, { docs: [] } as any);
-    return snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+    return snap.docs
+      .map((d: any) => ({ id: d.id, ...d.data() }))
+      .sort((a: any, b: any) => (b.startedAt > a.startedAt ? 1 : -1));
   } catch (e) { return []; }
 }
 

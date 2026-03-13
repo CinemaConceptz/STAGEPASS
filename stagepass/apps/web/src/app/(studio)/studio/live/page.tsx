@@ -195,17 +195,34 @@ export default function LiveDashboard() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-stage-mutetext mb-1 uppercase tracking-widest">Share Link</label>
+                <label className="block text-xs text-stage-mutetext mb-1 uppercase tracking-widest">Short Stream URL</label>
                 <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2.5">
-                  <code className="text-xs text-stage-mint flex-1 break-all font-mono">/live</code>
-                  <button onClick={() => copyToClipboard(`${window.location.origin}/live`, "share")} className="shrink-0">
-                    {copiedField === "share" ? <Check size={14} className="text-stage-mint" /> : <Copy size={14} className="text-stage-mutetext hover:text-white" />}
+                  <code className="text-xs text-stage-mint flex-1 font-mono" data-testid="short-stream-url">
+                    {`${typeof window !== "undefined" ? window.location.origin : ""}/api/live/${streamInfo.channelId}/hls`}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(`${window.location.origin}/api/live/${streamInfo.channelId}/hls`, "shorturl")}
+                    className="shrink-0"
+                    data-testid="copy-shorturl-btn"
+                    title="Copy short stream URL"
+                  >
+                    {copiedField === "shorturl" ? <Check size={14} className="text-stage-mint" /> : <Copy size={14} className="text-stage-mutetext hover:text-white" />}
                   </button>
                 </div>
+                <p className="text-xs text-stage-mutetext mt-1">Opens directly in VLC or any HLS player</p>
               </div>
-              <p className="text-xs text-stage-mutetext">
-                Your stream will automatically appear on the Live page once broadcasting begins.
-              </p>
+              <div>
+                <label className="block text-xs text-stage-mutetext mb-1 uppercase tracking-widest">Viewer Page</label>
+                <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2.5">
+                  <code className="text-xs text-stage-mint flex-1 font-mono" data-testid="viewer-page-url">
+                    {`${typeof window !== "undefined" ? window.location.origin : ""}/live/${streamInfo.channelId}`}
+                  </code>
+                  <button onClick={() => copyToClipboard(`${window.location.origin}/live/${streamInfo.channelId}`, "viewer")} className="shrink-0">
+                    {copiedField === "viewer" ? <Check size={14} className="text-stage-mint" /> : <Copy size={14} className="text-stage-mutetext hover:text-white" />}
+                  </button>
+                </div>
+                <p className="text-xs text-stage-mutetext mt-1">Share this link — viewers land directly on your stream</p>
+              </div>
             </div>
           </div>
         </div>
