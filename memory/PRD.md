@@ -14,15 +14,13 @@ apps/
 └── mobile/   # React Native (Expo) — iOS & Android native apps
 ```
 
-## Completed Features (March 2026)
+## Completed Features
 
 ### Live Stream RTMP Fix (March 2026)
 - Fixed critical bug: stream key was hardcoded as `"live"` — now correctly extracted from GCP inputUri
-- GCP `inputUri` (`rtmp://IP/app/key`) is now parsed and split: `rtmpServer` + `gcpStreamKey`
-- OBS instructions updated: added warning to NOT use Auto-Configuration Wizard, use Settings → Stream manually
-- Added `/api/admin/claim` Next.js route for first-time admin self-promotion (no Firestore console needed)
-- Added `/api/admin/claim` Express route as backup
-- Added "Admin Access" section on Profile page with Claim Admin button + link to Admin Dashboard
+- OBS instructions updated: added warning to NOT use Auto-Configuration Wizard
+- Added `/api/admin/claim` for first-time admin self-promotion
+- Added "Admin Access" section on Profile page
 
 ### Show Scheduling & Auto-DJ
 - Weekly schedule editor (day/time slots, show name, description)
@@ -32,32 +30,39 @@ apps/
 - ScheduleGrid component shows active show, upcoming shows, weekly grid
 - Mini player with skip track, mute, Auto-DJ/Scheduled mode indicator
 
+### Advanced Social + Crossfade (March 2026) ✅
+- **Dual-audio crossfade engine**: Two HTMLAudioElement instances (audioA/audioB) with volume fade transitions
+- **Crossfade settings**: Toggle enable/disable, configurable duration (1-8s) per station
+- **Mood tagging**: Creators can tag uploaded content with moods (Chill, Hype, Deep, Smooth, Energy)
+- **Mood filter**: Auto-DJ can filter tracks by mood tags, falls back to all tracks if filter yields empty
+- **Follow system**: FollowButton component with follow/unfollow toggle, follower count, onToggle callback
+- **Notifications**: NotificationBell with polling (30s), mark-all-read, notification dropdown
+- **Server-side APIs**: /api/follow/[creatorId] (GET/POST/DELETE), /api/notifications (GET/POST)
+- **Schedule API updated**: GET now returns crossfade/mood settings
+- **Station API updated**: /api/radio/station/now passes mood filter to getNowPlaying
+- **Scheduler fix**: Fixed critical `orderedRaw` undefined variable bug → replaced with `pool`
+- **Radio page fix**: Added missing `return` statement, fixed imports (Star, Zap), removed old audioRef
+- **Favicon**: Created SVG favicon (was 0-byte .ico)
+
 ### React Native Mobile App (Expo)
 - 6 screens: Feed, Radio, Live, Profile, Login, Signup
-- Bottom tab navigation (Feed, Radio, Live, Profile)
-- Firebase Auth with AsyncStorage persistence
-- expo-av for radio audio playback with mini player
-- expo-image-picker for profile photo
+- Bottom tab navigation, Firebase Auth with AsyncStorage persistence
 - EAS build configs for iOS/Android production builds
-- Same STAGEPASS theme tokens (colors, spacing) as web
 
 ### Web App (Next.js 14)
-- Auth: Google Sign-In, Email/Password, privacy agreement, password eye toggle
-- Profile: customizable (name, bio, avatar upload, social links, Google Drive management, admin claim)
-- Radio: active stations grid, featured station, multi-track audio picker with checkboxes
-- Live: RTMP URL + Stream Key (OBS-ready split) for streaming software
-- Landing: hero shows most recent uploaded video
+- Auth: Google Sign-In, Email/Password, privacy agreement
+- Profile: customizable (name, bio, avatar, social links, Google Drive, admin claim)
+- Radio: active stations grid, featured station, multi-track audio picker
+- Live: RTMP URL + Stream Key (OBS-ready split)
 - HLS Player: multi-quality ABR with quality selector
 - PWA: manifest.json, icons, mobile viewport, installable
 - Butler (Encore): Gemini AI assistant
-- Image upload: drag-and-drop file upload (not URL input)
+- Server-side data fetching via Admin SDK (bypasses Firestore security rules)
 
 ### API Service (Express.js)
 - Firebase ID token verification
 - Content CRUD, signed URLs, Drive import
-- Live session provisioning with RTMP URL + Stream Key (correctly split for OBS)
-- Radio station management (multi-track, artwork)
-- Schedule CRUD, Auto-DJ settings
+- Live session provisioning, Radio station management
 - Follow/Unfollow, Notifications, Analytics, Admin stats
 
 ### Media Worker (Express.js)
@@ -65,24 +70,27 @@ apps/
 - Drive → GCS transfer, Transcoder API (720p + 360p HLS)
 
 ## Key API Endpoints
-- `POST /api/radio/schedule` — Save show schedule + Auto-DJ settings
-- `GET /api/radio/schedule?stationId=xxx` — Fetch schedule
-- `POST /api/radio/station` — Create/update station (multi-track)
-- `GET /api/radio/station/now?stationId=xxx` — Auto-DJ now playing
-- `POST /api/live/session` — Provision live channel (returns RTMP URL + stream key)
+- `POST /api/radio/schedule` — Save schedule + Auto-DJ + crossfade + mood settings
+- `GET /api/radio/schedule?stationId=xxx` — Fetch schedule with crossfade/mood
+- `GET /api/radio/station/now?stationId=xxx` — Auto-DJ now playing (with mood filter)
+- `GET /api/radio/stations` — List all stations (Admin SDK)
+- `GET/POST/DELETE /api/follow/[creatorId]` — Follow system
+- `GET/POST /api/notifications` — Notification system
+- `POST /api/live/session` — Provision live channel
 - `POST /api/content/import-drive` — Import from Google Drive
 
 ## Firestore Collections
-- `users/{uid}` — profiles (socialLinks, driveLinked, bio, avatarUrl)
-- `creators/{uid}` — creator channels
-- `content/{contentId}` — media items (status: QUEUED|PROCESSING|READY)
-- `radioStations/{stationId}` — stations (tracks[], schedule[], autoDjEnabled, autoDjShuffle)
-- `liveChannels/{channelId}` — live sessions (streamKey, ingestUrl)
+- `users/{uid}` — profiles
+- `creators/{uid}` — creator channels (followerCount)
+- `content/{contentId}` — media items (mood tag)
+- `radioStations/{stationId}` — stations (crossfadeEnabled, crossfadeDuration, moodFilter)
 - `follows/{followerId_creatorId}` — follow relationships
 - `notifications/{userId}/items/{id}` — notifications
+- `liveChannels/{channelId}` — live sessions
 - `liveChats/{channelId}/messages/{id}` — live chat
 
 ## P1/P2 Backlog
-- **P1**: Stripe Connect for tips/ticketed premieres (future add-on)
-- **P2**: Show scheduling live DJ handoff (scheduled show creator goes live during their slot)
+- **P1**: Stripe Connect for tips/ticketed premieres
+- **P2**: Show scheduling live DJ handoff
+- **P2**: Mobile app build & submission guide
 - **Future**: Server-side HLS stream generation for radio (FFmpeg on worker)
