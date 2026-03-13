@@ -24,86 +24,70 @@ User → Drive Picker → POST /api/content/import-drive (web route)
   → Playback URL: https://storage.googleapis.com/{bucket}/processed/{contentId}/manifest.m3u8
 ```
 
-## Completed (March 2026 — Full Build)
+## Completed (March 2026 — Full Build + Feature Expansion)
 
-### ✅ Web App (Next.js 14)
-- Route group layouts added: `(studio)`, `(public)`, `(auth)` — all navigation works
-- Studio auth guard: redirects to /login if not authenticated
-- Creator channel page: fetches real Firestore data (no fake hardcoded content)
-- Live page: fetches real live channels from Firestore
-- Radio studio: DrivePicker fixed to accept audio/* MIME types
-- Butler (Encore): Gemini 1.5 Flash via REST API (no ADC needed)
-- All API routes use Firebase Admin SDK (not client SDK)
-- `next.config.js`: serverExternalPackages for all GCP packages
-- Build: ✅ 22 routes compiled, zero errors
+### Web App (Next.js 14)
+- Route group layouts: `(studio)`, `(public)`, `(auth)`, `(admin)`
+- Login page: password eye toggle, Google Sign-In
+- Signup page: privacy agreement popup, password eye toggle, Google Sign-Up (with Drive permission), hidden slug (auto-generated)
+- Profile page: customizable (name, bio, avatar, social links, Google Drive connection management)
+- Radio page: active stations grid, featured station of the month, mini player, sign up CTA
+- Radio studio: station creation with name, description, artwork, Drive folder selection
+- Live page: broadcast with RTMP URL + Stream Key for OBS/Prism/3rd party
+- Landing page: hero shows most recent uploaded video (auto-rotates)
+- HLS Player: multi-quality ABR with quality selector (Auto/720p/360p)
+- PWA: manifest.json, icons, mobile viewport, installable
+- Butler (Encore): Gemini via server-side API key (not exposed in browser)
+- Firestore calls: 8s timeout with Promise.race (no infinite loading)
+- All interactive elements have data-testid attributes
+- Logo: proper STAGEPASS icon (replaced 0-byte empty file)
 
-### ✅ API Service (Express.js — apps/api/)
-- Firebase ID token verification middleware on all protected routes
-- `POST /content/import-drive` — queue Drive file + create Firestore doc + publish Pub/Sub
-- `GET /content/signed-upload` — mint GCS signed upload URL
-- `GET /content/:id`, `GET /content/feed/recent`
-- `POST /live/session` — provision Live Stream API channel
-- `POST /live/session/:id/stop`
-- `POST /radio/stations` — create/update station
-- `GET /radio/stations/global`, `GET /radio/stations/:id`
-- `GET /radio/stations/:id/now` — deterministic now-playing calculation
-- `POST /butler/resolve` — Gemini 1.5 Flash
-- `POST /creators`, `GET /creators/:slug`
+### API Service (Express.js — apps/api/)
+- Firebase ID token verification middleware
+- Content CRUD, signed URLs, Drive import
+- Live session provisioning with RTMP URL + Stream Key
+- Radio station management
+- Follow/Unfollow system
+- Notifications, Analytics, Admin stats
+- Butler (Gemini 1.5 Flash)
 
-### ✅ Media Worker (Express.js — apps/worker/)
-- `POST /tasks/process-content` — Pub/Sub push endpoint
-- Drive OAuth token → GCS raw bucket transfer (streaming)
-- Transcoder API: 720p HD + 360p SD HLS + thumbnail at 5s
-- Polls job status until SUCCEEDED/FAILED
-- Updates Firestore status: INGESTING → TRANSCODING → READY/FAILED
-- Makes processed GCS objects publicly readable for HLS playback
+### Media Worker (Express.js — apps/worker/)
+- Pub/Sub push endpoint for content processing
+- Drive → GCS transfer, Transcoder API (720p + 360p HLS)
+- Firestore status updates: INGESTING → TRANSCODING → READY/FAILED
 
-### ✅ Deploy Script (deploy_fast.ps1)
-- Deploys all 3 services in order: api → worker → web
-- Enables all required GCP APIs
-- Creates Artifact Registry repo (idempotent)
-- Creates Pub/Sub topic + push subscription (worker endpoint)
-- Creates Pub/Sub invoker service account with proper IAM
-- Grants all service account permissions (storage, transcoder, firestore, etc.)
-- Configures GCS CORS for HLS playback
-- Makes processed bucket publicly readable
+### Deployment
+- deploy_production.ps1: deploys all 3 services
+- SETUP.md: post-deployment guide (Firebase Auth, Drive API, Firestore indexes, custom domain)
 
 ## Environment Variables
-
-### Required at Deploy Time (in deploy_fast.ps1)
 | Variable | Value |
 |---|---|
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | `1:1005750289786:web:b77c70ef474707640d02c3` |
 | `NEXT_PUBLIC_FIREBASE_API_KEY` | `AIzaSyC88kuIJXBFt9w5Mmpu8t3lnSrSz2X3Kd0` |
 | `NEXT_PUBLIC_GOOGLE_API_KEY` | `AIzaSyDGg9xBDUyXoS6hNepgMx5xAacX_C3q_TI` |
 | `FIREBASE_PROJECT_ID` | `stagepass-live-v1` |
-| `GCS_BUCKET` | `stagepass-live-v1.firebasestorage.app` |
-| `GOOGLE_API_KEY` | Same as GOOGLE_API_KEY above |
 
 ## GCP Services Required
 - Cloud Run (web, api, worker)
 - Cloud Build + Artifact Registry
 - Pub/Sub (stagepass-content-process topic)
 - Cloud Storage (Firebase Storage bucket)
-- Transcoder API
-- Live Stream API
-- Firestore
-- Google Drive API
+- Transcoder API, Live Stream API
+- Firestore, Drive API
 - Generative Language API (Gemini)
 
 ## Firestore Collections
-- `users/{uid}` — user profiles
-- `creators/{uid}` — creator channels (slug, displayName, type, bio)
-- `content/{contentId}` — media items (status: QUEUED→INGESTING→TRANSCODING→READY)
-- `radioStations/{stationId}` — radio stations
-- `liveChannels/{channelId}` — active live sessions
+- `users/{uid}` — user profiles (with socialLinks, driveLinked fields)
+- `creators/{uid}` — creator channels
+- `content/{contentId}` — media items
+- `radioStations/{stationId}` — radio stations (with artworkUrl, description)
+- `liveChannels/{channelId}` — active live sessions (with streamKey)
+- `follows/{followerId_creatorId}` — follow relationships
+- `notifications/{userId}/items/{id}` — user notifications
+- `liveChats/{channelId}/messages/{id}` — live chat messages
 
 ## P1/P2 Backlog
-- **P1**: Stripe Connect for tips/ticketed premieres
-- **P1**: Firebase Realtime Database for live chat
-- **P1**: Custom domain stagepassaccess.com → Cloud Run mapping
-- **P2**: Admin dashboard for station review/approval
-- **P2**: Follow system + follower notifications
-- **P2**: Signed URL playback (Media CDN)
-- **P2**: Multi-quality ABR in radio player
-- **Future**: Mobile PWA, AI butler action execution, creator analytics
+- **P1**: Stripe Connect for tips/ticketed premieres (future add-on)
+- **P2**: Show scheduling and Auto-DJ functionality
+- **Future**: Native mobile apps (iOS/Android)
