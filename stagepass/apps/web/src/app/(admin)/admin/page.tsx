@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAdminStats, getAllContent } from "@/lib/firebase/firestore";
+import { useAuth } from "@/context/AuthContext";
 import { Users, Video, Radio, Activity, CheckCircle, XCircle, Clock } from "lucide-react";
-import { getFirestore, doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 
 interface Stats {
   totalUsers: number;
@@ -15,24 +13,41 @@ interface Stats {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"overview" | "content" | "stations">("overview");
 
   useEffect(() => {
-    getAdminStats().then(s => {
-      setStats(s as Stats);
+    if (!user) return;
+    const load = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/admin/stats", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!data.error) setStats(data);
+      } catch { /* silent */ }
       setLoading(false);
-    });
-  }, []);
+    };
+    load();
+  }, [user]);
 
   const updateContentStatus = async (id: string, status: string) => {
-    if (!db) return;
-    await updateDoc(doc(db, "content", id), { status });
-    setStats(prev => prev ? {
-      ...prev,
-      recentContent: prev.recentContent.map(c => c.id === id ? { ...c, status } : c)
-    } : prev);
+    if (!user) return;
+    try {
+      const token = await user.getIdToken();
+      await fetch("/api/admin/stats", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ contentId: id, status }),
+      });
+      setStats(prev => prev ? {
+        ...prev,
+        recentContent: prev.recentContent.map(c => c.id === id ? { ...c, status } : c)
+      } : prev);
+    } catch { /* silent */ }
   };
 
   if (loading) {

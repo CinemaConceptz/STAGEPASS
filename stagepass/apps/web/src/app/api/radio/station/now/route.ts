@@ -36,6 +36,32 @@ export async function GET(req: Request) {
     const autoDjShuffle = data.autoDjShuffle || false;
     const moodFilter: string[] = data.moodFilter || [];
 
+    // Check if a live DJ has taken over
+    const liveDj = data.liveDj || null;
+    if (liveDj) {
+      return NextResponse.json({
+        success: true,
+        nowPlaying: {
+          track: null,
+          mode: "LIVE_DJ",
+          liveDj: {
+            displayName: liveDj.displayName,
+            startedAt: liveDj.startedAt,
+            liveStreamUrl: liveDj.liveStreamUrl,
+          },
+        },
+        station: {
+          name: data.name,
+          genre: data.genre,
+          trackCount: tracks.length,
+          autoDjEnabled,
+          autoDjShuffle,
+          hasSchedule: schedule.length > 0,
+          hlsPlaybackUrl: data.hlsPlaybackUrl || null,
+        },
+      });
+    }
+
     // Check if a scheduled show is currently active
     const activeSlot = getActiveScheduleSlot(schedule);
 
@@ -56,6 +82,7 @@ export async function GET(req: Request) {
         autoDjEnabled,
         autoDjShuffle,
         hasSchedule: schedule.length > 0,
+        hlsPlaybackUrl: data.hlsPlaybackUrl || null,
       },
     });
   } catch (error: any) {

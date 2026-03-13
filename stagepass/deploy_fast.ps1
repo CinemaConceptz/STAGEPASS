@@ -47,6 +47,7 @@ $apis = @(
   "drive.googleapis.com",
   "storage.googleapis.com",
   "generativelanguage.googleapis.com",
+  "aiplatform.googleapis.com",
   "firestore.googleapis.com"
 )
 gcloud services enable @apis
@@ -199,7 +200,7 @@ gcloud run deploy stagepass-web `
   --allow-unauthenticated `
   --memory 1Gi `
   --cpu 1 `
-  --set-env-vars "NEXT_PUBLIC_FIREBASE_API_KEY=$FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID=$FIREBASE_APP_ID,NEXT_PUBLIC_GOOGLE_API_KEY=$GOOGLE_API_KEY,NEXT_PUBLIC_GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID,NEXT_PUBLIC_API_URL=$ApiUrl"
+  --set-env-vars "NEXT_PUBLIC_FIREBASE_API_KEY=$FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID=$FIREBASE_APP_ID,NEXT_PUBLIC_GOOGLE_API_KEY=$GOOGLE_API_KEY,NEXT_PUBLIC_GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID,NEXT_PUBLIC_API_URL=$ApiUrl,WORKER_SERVICE_URL=$WorkerUrl,GOOGLE_API_KEY=$GOOGLE_API_KEY,GCS_BUCKET=$FIREBASE_STORAGE_BUCKET,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,PUBSUB_TOPIC=stagepass-content-process"
 
 if ($LASTEXITCODE -ne 0) { Write-Error "[ERROR] Web deploy failed"; exit 1 }
 
@@ -214,6 +215,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$Def
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/datastore.user" 2>$null
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/livestream.admin" 2>$null
 gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/pubsub.publisher" 2>$null
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/run.invoker" 2>$null
+gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/aiplatform.user" 2>$null
 
 # Make processed GCS paths publicly readable (for HLS playback)
 Write-Host ""

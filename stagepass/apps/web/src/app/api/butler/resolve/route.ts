@@ -42,42 +42,130 @@ User: "upload a video" → {"text":"Taking you to the upload suite.","action":"U
 User: "what is STAGEPASS" → {"text":"STAGEPASS is a creator-first platform for live streams, video premieres, and radio. No algorithm — just your content, your audience, your signal.","action":"NONE","emotion":"FOCUSED"}
 `;
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const userMessage = body.text || "";
+/**
+ * Get an access token via Application Default Credentials (works on Cloud Run).
+ * Falls back to GOOGLE_API_KEY if ADC is unavailable.
+ */
+async function getGeminiResponse(userMessage: string): Promise<any> {
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const hasValidApiKey = apiKey && !apiKey.includes("dummy");
 
-    const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ text: "Encore is offline. Google API key not configured.", action: "NONE", emotion: "CONCERNED" });
-    }
+  const requestBody = {
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ role: "user", parts: [{ text: userMessage }] }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
+  };
 
+  // Strategy 1: Use API key if available and not dummy
+  if (hasValidApiKey) {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
+    if (res.ok) return res.json();
+    console.warn(`[encore] API key auth failed (${res.status}), trying ADC...`);
+  }
+
+  // Strategy 2: Use Application Default Credentials (Cloud Run service account)
+  try {
+    const { GoogleAuth } = await import("google-auth-library");
+    const auth = new GoogleAuth({
+      scopes: ["https://www.googleapis.com/auth/generative-language"],
+    });
+    const client = await auth.getClient();
+    const tokenResponse = await client.getAccessToken();
+    const accessToken = tokenResponse?.token;
+
+    if (!accessToken) throw new Error("ADC: no access token");
+
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || "stagepass-live-v1";
+    const res = await fetch(
+      `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-          contents: [{ role: "user", parts: [{ text: userMessage }] }],
+          contents: [
+            { role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\nUser: " + userMessage }] }
+          ],
           generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
         }),
       }
     );
 
-    if (!res.ok) throw new Error(`Gemini ${res.status}`);
+    if (res.ok) return res.json();
+    throw new Error(`Vertex AI ${res.status}: ${await res.text()}`);
+  } catch (adcError: any) {
+    console.warn(`[encore] ADC/Vertex failed: ${adcError.message}`);
+  }
 
-    const data = await res.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const clean = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  // Strategy 3: Fallback — rule-based responses (works without any API key)
+  return null;
+}
 
-    try {
-      return NextResponse.json(JSON.parse(clean));
-    } catch {
-      return NextResponse.json({ text: clean || "I'm ready to assist.", action: "NONE", emotion: "FOCUSED" });
+function getFallbackResponse(userMessage: string) {
+  const lower = userMessage.toLowerCase();
+
+  if (lower.includes("live") || lower.includes("stream") || lower.includes("broadcast")) {
+    return { text: "I can set up a live stream for you. Shall I provision a channel?", action: "GO_LIVE", emotion: "EXCITED" };
+  }
+  if (lower.includes("upload") || lower.includes("video") || lower.includes("import")) {
+    return { text: "Taking you to the upload suite now.", action: "UPLOAD_VIDEO", emotion: "FOCUSED" };
+  }
+  if (lower.includes("radio") || lower.includes("station") || lower.includes("dj")) {
+    return { text: "Opening the Radio Station manager.", action: "RADIO_STATION", emotion: "FOCUSED" };
+  }
+  if (lower.includes("stat") || lower.includes("analytics") || lower.includes("perform") || lower.includes("dashboard")) {
+    return { text: "Pulling up your analytics dashboard.", action: "SHOW_ANALYTICS", emotion: "ANALYTICAL" };
+  }
+  if (lower.includes("admin")) {
+    return { text: "Navigating to the Admin panel.", action: "NAVIGATE", target: "/admin", emotion: "FOCUSED" };
+  }
+  if (lower.includes("profile") || lower.includes("settings") || lower.includes("account")) {
+    return { text: "Opening your profile settings.", action: "NAVIGATE", target: "/studio/profile", emotion: "FOCUSED" };
+  }
+  if (lower.includes("schedule")) {
+    return { text: "Opening the radio schedule manager.", action: "NAVIGATE", target: "/studio/radio/schedule", emotion: "FOCUSED" };
+  }
+  if (lower.includes("what") && lower.includes("stagepass")) {
+    return { text: "STAGEPASS is a creator-first ecosystem for live streams, video premieres, and radio stations. Your content, your audience, your signal.", action: "NONE", emotion: "FOCUSED" };
+  }
+  if (lower.includes("help") || lower.includes("what can you do")) {
+    return { text: "I can help you go live, upload videos, manage your radio station, check analytics, and navigate anywhere in STAGEPASS. Just tell me what you need.", action: "NONE", emotion: "FOCUSED" };
+  }
+
+  return { text: "I'm here to help. You can ask me to go live, upload a video, manage your radio station, or check your analytics.", action: "NONE", emotion: "FOCUSED" };
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const userMessage = body.text || "";
+
+    const geminiData = await getGeminiResponse(userMessage);
+
+    if (geminiData) {
+      const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const clean = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+
+      try {
+        return NextResponse.json(JSON.parse(clean));
+      } catch {
+        return NextResponse.json({ text: clean || "I'm ready to assist.", action: "NONE", emotion: "FOCUSED" });
+      }
     }
+
+    // No AI available — use rule-based fallback
+    return NextResponse.json(getFallbackResponse(userMessage));
   } catch (error: any) {
-    console.error("Encore Brain Error:", error);
-    return NextResponse.json({ text: "Neural link disrupted. Try again.", action: "NONE", emotion: "CONCERNED" });
+    console.error("[encore] Error:", error);
+    return NextResponse.json(getFallbackResponse(""));
   }
 }
