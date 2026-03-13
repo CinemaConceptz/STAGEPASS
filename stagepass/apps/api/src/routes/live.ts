@@ -48,6 +48,13 @@ liveRouter.post("/session", requireAuth, async (req: Request, res: Response) => 
 
     const playbackUrl = `https://storage.googleapis.com/${BUCKET}/live/${channelId}/manifest.m3u8`;
 
+    // Parse GCP RTMP URI into OBS-compatible Server + Stream Key
+    // inputRes.uri format: "rtmp://<IP>/<app>/<stream_key>"
+    const fullUri = inputRes.uri || "";
+    const lastSlash = fullUri.lastIndexOf("/");
+    const rtmpServer = lastSlash > 7 ? fullUri.substring(0, lastSlash) : fullUri;
+    const streamKey = lastSlash > 7 ? fullUri.substring(lastSlash + 1) : channelId;
+
     // Record in Firestore
     const db = getFirestore(adminApp);
     await db.collection("liveChannels").doc(channelId).set({
@@ -55,7 +62,9 @@ liveRouter.post("/session", requireAuth, async (req: Request, res: Response) => 
       ownerUid: uid,
       title: title || "Live Stream",
       status: "LIVE",
-      ingestUrl: inputRes.uri,
+      ingestUrl: fullUri,
+      rtmpServer,
+      streamKey,
       playbackUrl,
       startedAt: new Date().toISOString(),
     });
@@ -86,8 +95,9 @@ liveRouter.post("/session", requireAuth, async (req: Request, res: Response) => 
     return res.json({
       success: true,
       channelId,
-      streamUrl: inputRes.uri,
-      streamKey: "live",
+      streamUrl: rtmpServer,   // OBS "Server" field: rtmp://IP/app
+      streamKey,               // OBS "Stream Key" field: the key part only
+      fullRtmpUri: fullUri,    // Full URI for reference
       playbackUrl,
     });
   } catch (err: any) {

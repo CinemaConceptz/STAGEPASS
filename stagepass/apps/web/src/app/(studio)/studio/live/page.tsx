@@ -136,16 +136,20 @@ export default function LiveDashboard() {
           <div className="bg-stage-mint/5 border border-stage-mint/20 rounded-2xl p-6 space-y-3">
             <h3 className="font-bold text-stage-mint flex items-center gap-2">
               <AlertCircle size={18} />
-              How to connect your streaming software
+              How to connect OBS Studio
             </h3>
             <ol className="text-sm text-stage-mutetext space-y-2 list-decimal list-inside">
-              <li>Open <strong className="text-white">OBS Studio</strong>, <strong className="text-white">Prism</strong>, or any RTMP-compatible broadcaster</li>
-              <li>Go to <strong className="text-white">Settings &gt; Stream</strong></li>
-              <li>Set Service to <strong className="text-white">"Custom"</strong></li>
-              <li>Paste the <strong className="text-white">RTMP Server URL</strong> below into the Server field</li>
-              <li>Paste the <strong className="text-white">Stream Key</strong> below into the Stream Key field</li>
-              <li>Click <strong className="text-white">Start Streaming</strong> in your software</li>
+              <li>Open <strong className="text-white">OBS Studio</strong></li>
+              <li>Go to <strong className="text-white">Settings → Stream</strong> <span className="text-amber-400">(do NOT use the Auto-Configuration Wizard)</span></li>
+              <li>Set Service to <strong className="text-white">"Custom..."</strong></li>
+              <li>In the <strong className="text-white">Server</strong> field, paste the <strong className="text-white">RTMP Server URL</strong> below</li>
+              <li>In the <strong className="text-white">Stream Key</strong> field, paste the <strong className="text-white">Stream Key</strong> below</li>
+              <li>Click <strong className="text-white">OK</strong>, then click <strong className="text-white">Start Streaming</strong></li>
             </ol>
+            <p className="text-xs text-amber-400/80 mt-2 flex items-center gap-1">
+              <AlertCircle size={12} />
+              Note: The OBS Auto-Configuration Wizard tests OBS's own servers — it is not related to your stream. Always use <strong>Settings → Stream</strong> for custom RTMP.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

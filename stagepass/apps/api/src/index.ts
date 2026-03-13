@@ -5,6 +5,7 @@ import { liveRouter } from "./routes/live";
 import { radioRouter } from "./routes/radio";
 import { butlerRouter } from "./routes/butler";
 import { creatorsRouter } from "./routes/creators";
+import { adminRouter } from "./routes/admin";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -22,6 +23,7 @@ app.use("/live", liveRouter);
 app.use("/radio", radioRouter);
 app.use("/butler", butlerRouter);
 app.use("/creators", creatorsRouter);
+app.use("/admin", adminRouter);
 
 // ─── Error Handler ───────────────────────────────────────────────────────────
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

@@ -7,7 +7,7 @@ import { updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { User, Camera, Save, Link as LinkIcon, ExternalLink, HardDrive, LogOut, CheckCircle } from "lucide-react";
+import { User, Camera, Save, Link as LinkIcon, ExternalLink, HardDrive, LogOut, CheckCircle, ShieldCheck, AlertCircle } from "lucide-react";
 import ImageUploader from "@/components/studio/ImageUploader";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [claimingAdmin, setClaimingAdmin] = useState(false);
+  const [adminClaimMsg, setAdminClaimMsg] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -101,6 +102,29 @@ export default function ProfilePage() {
     } catch (e: any) {
       console.error(e);
     }
+  };
+
+  const handleClaimAdmin = async () => {
+    if (!user) return;
+    setClaimingAdmin(true);
+    setAdminClaimMsg("");
+    try {
+      const idToken = await user.getIdToken();
+      const res = await fetch("/api/admin/claim", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminClaimMsg(data.message || "Admin access granted!");
+        setProfile((prev: any) => ({ ...prev, isAdmin: true }));
+      } else {
+        setAdminClaimMsg(data.error || "Failed to claim admin.");
+      }
+    } catch (e: any) {
+      setAdminClaimMsg(e.message);
+    }
+    setClaimingAdmin(false);
   };
 
   if (!user) {
@@ -225,6 +249,47 @@ export default function ProfilePage() {
             <Button variant="primary" onClick={handleLinkDrive} data-testid="link-drive-btn">
               <HardDrive size={16} className="mr-2" /> Link Google Drive
             </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Admin Access */}
+      <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-4">
+        <h3 className="font-bold text-lg border-b border-white/10 pb-2 flex items-center gap-2">
+          <ShieldCheck size={18} className="text-stage-mint" /> Admin Access
+        </h3>
+        {profile?.isAdmin ? (
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-stage-mint/10 rounded-lg flex items-center justify-center">
+              <ShieldCheck size={20} className="text-stage-mint" />
+            </div>
+            <div>
+              <p className="font-medium text-white">Admin Access Active</p>
+              <p className="text-xs text-stage-mutetext">You have full admin access to the platform.</p>
+            </div>
+            <Link href="/admin" className="ml-auto">
+              <Button variant="primary" size="sm" data-testid="go-to-admin-btn">Admin Dashboard</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-stage-mutetext">
+              If you are the platform owner, click below to claim admin access. This only works if no admin exists yet, or if your email is whitelisted.
+            </p>
+            <Button
+              variant="secondary"
+              onClick={handleClaimAdmin}
+              disabled={claimingAdmin}
+              data-testid="claim-admin-btn"
+            >
+              <ShieldCheck size={16} className="mr-2" />
+              {claimingAdmin ? "Claiming..." : "Claim Admin Access"}
+            </Button>
+            {adminClaimMsg && (
+              <p className={`text-sm flex items-center gap-1 ${adminClaimMsg.includes("granted") || adminClaimMsg.includes("admin") && !adminClaimMsg.includes("exists") ? "text-stage-mint" : "text-red-400"}`} data-testid="admin-claim-msg">
+                <AlertCircle size={14} /> {adminClaimMsg}
+              </p>
+            )}
           </div>
         )}
       </div>

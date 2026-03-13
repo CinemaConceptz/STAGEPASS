@@ -40,7 +40,13 @@ export async function POST(req: Request) {
     // 2. Start the channel
     await startChannel(channelId);
 
-    const rtmpUrl = inputUri || `rtmp://live.stagepassaccess.com/live`;
+    // Parse GCP's inputUri into OBS-compatible Server + Stream Key
+    // GCP format: "rtmp://<IP>/<app>/<gcp-stream-key>"
+    // OBS needs: Server = "rtmp://<IP>/<app>", Stream Key = "<gcp-stream-key>"
+    const fullRtmpUri = inputUri || `rtmp://live.stagepassaccess.com/live`;
+    const lastSlash = fullRtmpUri.lastIndexOf("/");
+    const rtmpServer = lastSlash > 7 ? fullRtmpUri.substring(0, lastSlash) : fullRtmpUri;
+    const gcpStreamKey = lastSlash > 7 ? fullRtmpUri.substring(lastSlash + 1) : streamKey;
 
     // 3. Record the live session in Firestore
     const db = getFirestore(adminApp);
@@ -51,8 +57,9 @@ export async function POST(req: Request) {
       ownerUid: userId,
       title: title || "Live Stream",
       status: "LIVE",
-      ingestUrl: rtmpUrl,
-      streamKey,
+      ingestUrl: fullRtmpUri,
+      rtmpServer,
+      streamKey: gcpStreamKey,
       playbackUrl,
       startedAt: new Date().toISOString(),
       listenerCount: 0,
@@ -61,9 +68,10 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       channelId,
-      streamUrl: rtmpUrl,
-      rtmpUrl,
-      streamKey,
+      streamUrl: rtmpServer,   // OBS "Server" field
+      rtmpUrl: rtmpServer,
+      streamKey: gcpStreamKey, // OBS "Stream Key" field (GCP-generated key from inputUri)
+      fullRtmpUri,
       playbackUrl,
     });
   } catch (error: any) {

@@ -16,6 +16,14 @@ apps/
 
 ## Completed Features (March 2026)
 
+### Live Stream RTMP Fix (March 2026)
+- Fixed critical bug: stream key was hardcoded as `"live"` — now correctly extracted from GCP inputUri
+- GCP `inputUri` (`rtmp://IP/app/key`) is now parsed and split: `rtmpServer` + `gcpStreamKey`
+- OBS instructions updated: added warning to NOT use Auto-Configuration Wizard, use Settings → Stream manually
+- Added `/api/admin/claim` Next.js route for first-time admin self-promotion (no Firestore console needed)
+- Added `/api/admin/claim` Express route as backup
+- Added "Admin Access" section on Profile page with Claim Admin button + link to Admin Dashboard
+
 ### Show Scheduling & Auto-DJ
 - Weekly schedule editor (day/time slots, show name, description)
 - Auto-DJ: client-side sequential playback, epoch-synced (all listeners hear same track)
@@ -35,9 +43,9 @@ apps/
 
 ### Web App (Next.js 14)
 - Auth: Google Sign-In, Email/Password, privacy agreement, password eye toggle
-- Profile: customizable (name, bio, avatar upload, social links, Google Drive management)
+- Profile: customizable (name, bio, avatar upload, social links, Google Drive management, admin claim)
 - Radio: active stations grid, featured station, multi-track audio picker with checkboxes
-- Live: RTMP URL + Stream Key for OBS/Prism/3rd party
+- Live: RTMP URL + Stream Key (OBS-ready split) for streaming software
 - Landing: hero shows most recent uploaded video
 - HLS Player: multi-quality ABR with quality selector
 - PWA: manifest.json, icons, mobile viewport, installable
@@ -47,7 +55,7 @@ apps/
 ### API Service (Express.js)
 - Firebase ID token verification
 - Content CRUD, signed URLs, Drive import
-- Live session provisioning with RTMP URL + Stream Key
+- Live session provisioning with RTMP URL + Stream Key (correctly split for OBS)
 - Radio station management (multi-track, artwork)
 - Schedule CRUD, Auto-DJ settings
 - Follow/Unfollow, Notifications, Analytics, Admin stats

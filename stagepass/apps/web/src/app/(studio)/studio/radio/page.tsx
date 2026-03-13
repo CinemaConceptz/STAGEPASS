@@ -213,7 +213,30 @@ export default function RadioStudio() {
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-4">
+        <Button
+          variant="secondary"
+          size="lg"
+          onClick={async () => {
+            if (!auth?.currentUser) return;
+            try {
+              const res = await fetch("/api/radio/generate-stream", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ stationId: auth.currentUser.uid, userId: auth.currentUser.uid }),
+              });
+              const data = await res.json();
+              if (data.success) {
+                alert("HLS stream generation started! It may take a few minutes for your station to go live.");
+              } else {
+                alert(data.error || "Failed to generate stream.");
+              }
+            } catch (e) { console.error(e); }
+          }}
+          data-testid="radio-generate-stream-btn"
+        >
+          Generate HLS Stream
+        </Button>
         <Button
           variant="primary"
           size="lg"
