@@ -1,0 +1,104 @@
+{
+  "summary": "STAGEPASS iteration 6 - Verified all 6 bug fixes in production ZIP. All backend tests pass (13/13). ZIP content verified with correct file changes for: Profile API, Player Drive fallback, Upload Another button, 15-min schedule intervals, driveUrl storage, and HLS button guard.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: /api/download/stagepass-production returns 200 with application/zip (5.69MB)",
+    "Backend: All 13 pytest tests passed (health, download, feed, auth, chat)",
+    "Frontend: Home page loads with STAGEPASS PRODUCTION PACKAGE heading",
+    "Frontend: Navigation works - Feed, Dashboard, Radio, Live, Community tabs",
+    "Frontend: Download button present and functional",
+    "ZIP FIX 1: apps/web/src/app/api/profile/route.ts EXISTS - Server-side profile API with GET/PUT using firebase-admin",
+    "ZIP FIX 1: studio/profile/page.tsx uses /api/profile (3 occurrences at lines 40, 75, 110) - NO getUserProfile import",
+    "ZIP FIX 2: Player.tsx has driveFileId prop (line 10) and Drive iframe fallback (line 104: drive.google.com/file/d/{driveFileId}/preview)",
+    "ZIP FIX 3: uploads/page.tsx has 'Upload Another' button with data-testid='upload-another-btn' (lines 114-116)",
+    "ZIP FIX 4: schedule/page.tsx has MINUTES = [0, 15, 30, 45] (line 11) and 'Midnight (End of Day)' option (line 307)",
+    "ZIP FIX 5: radio/station/route.ts stores driveUrl per track (line 28: driveUrl: https://drive.google.com/uc?export=download&id=...)",
+    "ZIP FIX 6: radio/station/now/route.ts uses driveUrl fallback (line 29: url: t.driveUrl || t.url)",
+    "ZIP FIX 6: studio/radio/page.tsx has stationExists state guard on HLS button (line 241: disabled={!stationExists})"
+  ],
+  "zip_verification": {
+    "zip_file": "/app/stagepass_production.zip",
+    "size": "5.69MB (5690667 bytes)",
+    "files_verified": [
+      {
+        "file": "apps/web/src/app/api/profile/route.ts",
+        "status": "EXISTS",
+        "fixes": ["Server-side GET/PUT profile API using firebase-admin"]
+      },
+      {
+        "file": "apps/web/src/app/(studio)/studio/profile/page.tsx",
+        "status": "VERIFIED",
+        "fixes": ["Uses /api/profile instead of getUserProfile", "3 fetch calls to /api/profile"]
+      },
+      {
+        "file": "apps/web/src/components/stagepass/Player.tsx",
+        "status": "VERIFIED",
+        "fixes": ["driveFileId prop added", "Drive iframe fallback when HLS unavailable"]
+      },
+      {
+        "file": "apps/web/src/app/(studio)/studio/uploads/page.tsx",
+        "status": "VERIFIED",
+        "fixes": ["Upload Another button with reset functionality"]
+      },
+      {
+        "file": "apps/web/src/app/(studio)/studio/radio/schedule/page.tsx",
+        "status": "VERIFIED",
+        "fixes": ["MINUTES = [0, 15, 30, 45] for 15-min increments", "Midnight (End of Day) option"]
+      },
+      {
+        "file": "apps/web/src/app/(studio)/studio/radio/page.tsx",
+        "status": "VERIFIED",
+        "fixes": ["stationExists state guards HLS button", "Message: Launch station first to enable HLS"]
+      },
+      {
+        "file": "apps/web/src/app/api/radio/station/route.ts",
+        "status": "VERIFIED",
+        "fixes": ["driveUrl stored per track"]
+      },
+      {
+        "file": "apps/web/src/app/api/radio/station/now/route.ts",
+        "status": "VERIFIED",
+        "fixes": ["Uses t.driveUrl || t.url fallback"]
+      },
+      {
+        "file": "apps/web/src/app/api/content/feed/route.ts",
+        "status": "VERIFIED",
+        "fixes": ["Includes driveFileId in mapContent"]
+      },
+      {
+        "file": "apps/web/src/app/api/content/[id]/route.ts",
+        "status": "VERIFIED",
+        "fixes": ["Includes driveFileId in mapContent"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_stagepass_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "MOCKED APIs: Preview portal uses mock data (/api/feed returns hardcoded items, /api/auth/login only accepts demo credentials)"
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "100% (all features verified)"
+  },
+  "seed_data_creation": "None required - uses mock data",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 6 verified all 6 reported bug fixes in production ZIP: (1) Profile uses server-side /api/profile API, (2) Player has driveFileId prop with Drive iframe fallback, (3) Uploads has 'Upload Another' button, (4) Schedule has 15-min intervals + Midnight option, (5) Station route stores driveUrl, (6) HLS button disabled until station created. All code changes verified via grep on extracted ZIP.",
+  "mocked_apis": {
+    "/api/feed": "Returns 3 hardcoded feed items",
+    "/api/auth/login": "Only accepts demo@stagepass.com / demo123"
+  }
+}

@@ -106,7 +106,16 @@ export default function UploadPage() {
             </div>
           </div>
 
-          <div className="pt-4 flex justify-end">
+          <div className="pt-4 flex justify-end gap-3">
+            {status === "DONE" && (
+              <Button
+                variant="secondary"
+                onClick={() => { setStatus("IDLE"); setSelectedFile(null); setTitle(""); setMood(""); }}
+                data-testid="upload-another-btn"
+              >
+                Upload Another
+              </Button>
+            )}
             <Button 
               variant="primary" 
               onClick={handleImport}

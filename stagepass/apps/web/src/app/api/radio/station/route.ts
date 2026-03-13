@@ -25,6 +25,8 @@ export async function POST(req: Request) {
       driveFileId: t.driveFileId,
       mimeType: t.mimeType || "audio/mpeg",
       url: `https://storage.googleapis.com/${bucket}/radio/${stationId}/tracks/${t.driveFileId}`,
+      driveUrl: `https://drive.google.com/uc?export=download&id=${t.driveFileId}`,
+      mood: t.mood || "",
       durationMs: 180000, // Default 3 min, updated after processing
     }));
 

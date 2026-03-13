@@ -8,7 +8,7 @@ import { Calendar, Clock, Plus, Trash2, Save, CheckCircle, Shuffle, Layers, Musi
 import { ScheduleSlot, DAY_NAMES, formatTime } from "@/lib/radio/scheduler";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = [0, 30];
+const MINUTES = [0, 15, 30, 45];
 const MOODS = ["Chill", "Hype", "Deep", "Smooth", "Energy"] as const;
 const MOOD_COLORS: Record<string, string> = {
   Chill: "bg-blue-500/20 text-blue-300 border-blue-500/30",
@@ -304,6 +304,7 @@ export default function ScheduleEditor() {
                           </option>
                         ))
                       )}
+                      <option value="23:59">Midnight (End of Day)</option>
                     </select>
                   </div>
                 </div>

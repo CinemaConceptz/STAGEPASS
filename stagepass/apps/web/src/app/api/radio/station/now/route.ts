@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       id: t.id,
       title: t.title,
       artist: t.artist || "",
-      url: t.url,
+      url: t.driveUrl || t.url,
       durationMs: t.durationMs || t.duration || 180000,
       mood: t.mood || "",
     }));

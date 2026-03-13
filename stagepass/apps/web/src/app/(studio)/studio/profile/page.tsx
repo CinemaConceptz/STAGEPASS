@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { getUserProfile, updateUserProfile, updateCreatorProfile } from "@/lib/firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import Button from "@/components/ui/Button";
@@ -36,20 +35,30 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const p = await getUserProfile(user.uid);
-      if (p) {
-        setProfile(p);
-        setDisplayName(p.displayName || user.displayName || "");
-        setBio(p.bio || "");
-        setAvatarUrl(p.avatarUrl || user.photoURL || "");
-        setSocialLinks({
-          instagram: p.socialLinks?.instagram || "",
-          twitter: p.socialLinks?.twitter || "",
-          youtube: p.socialLinks?.youtube || "",
-          tiktok: p.socialLinks?.tiktok || "",
-          website: p.socialLinks?.website || "",
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch("/api/profile", {
+          headers: { Authorization: `Bearer ${idToken}` },
         });
-      } else {
+        const data = await res.json();
+        if (data.success && data.profile) {
+          const p = data.profile;
+          setProfile(p);
+          setDisplayName(p.displayName || user.displayName || "");
+          setBio(p.bio || "");
+          setAvatarUrl(p.avatarUrl || user.photoURL || "");
+          setSocialLinks({
+            instagram: p.socialLinks?.instagram || "",
+            twitter: p.socialLinks?.twitter || "",
+            youtube: p.socialLinks?.youtube || "",
+            tiktok: p.socialLinks?.tiktok || "",
+            website: p.socialLinks?.website || "",
+          });
+        } else {
+          setDisplayName(user.displayName || "");
+          setAvatarUrl(user.photoURL || "");
+        }
+      } catch {
         setDisplayName(user.displayName || "");
         setAvatarUrl(user.photoURL || "");
       }
@@ -62,16 +71,14 @@ export default function ProfilePage() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateUserProfile(user.uid, {
-        displayName,
-        bio,
-        avatarUrl,
-        socialLinks,
-      });
-      await updateCreatorProfile(user.uid, {
-        displayName,
-        bio,
-        avatarUrl,
+      const idToken = await user.getIdToken();
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ displayName, bio, avatarUrl, socialLinks }),
       });
       if (auth) {
         await updateProfile(user, { displayName, photoURL: avatarUrl || undefined });
@@ -94,11 +101,17 @@ export default function ProfilePage() {
   const handleLinkDrive = async () => {
     try {
       const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
-      if (!auth) return;
+      if (!auth || !user) return;
       const provider = new GoogleAuthProvider();
       provider.addScope("https://www.googleapis.com/auth/drive.readonly");
       await signInWithPopup(auth, provider);
-      await updateUserProfile(user!.uid, { driveLinked: true, driveLinkedAt: new Date().toISOString() });
+      // Update via server API
+      const idToken = await user.getIdToken();
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ driveLinked: true, driveLinkedAt: new Date().toISOString() }),
+      });
       setProfile({ ...profile, driveLinked: true });
     } catch (e: any) {
       console.error(e);

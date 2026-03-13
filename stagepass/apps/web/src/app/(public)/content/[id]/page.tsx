@@ -48,6 +48,7 @@ export default function ContentPage({ params }: { params: { id: string } }) {
         <Player
           hlsUrl={content.playbackUrl}
           contentId={params.id}
+          driveFileId={content.driveFileId}
           showListenerCount={false}
         />
 

@@ -29,6 +29,8 @@ export default function RadioStudio() {
   const [trackMoods, setTrackMoods] = useState<Record<string, string>>({}); // fileId → mood
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [stationExists, setStationExists] = useState(false);
+  const [hlsStatus, setHlsStatus] = useState("");
 
   const handleDriveSelectMultiple = (files: DriveFile[]) => {
     setAudioFiles((prev) => {
@@ -76,9 +78,12 @@ export default function RadioStudio() {
 
       if (data.success) {
         setSuccess(true);
+        setStationExists(true);
         setTimeout(() => {
           router.push("/radio");
         }, 1500);
+      } else {
+        alert(data.error || "Failed to save station.");
       }
     } catch (err) {
       console.error(err);
@@ -229,29 +234,41 @@ export default function RadioStudio() {
       </div>
 
       <div className="flex items-center justify-between gap-4">
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={async () => {
-            if (!auth?.currentUser) return;
-            try {
-              const res = await fetch("/api/radio/generate-stream", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ stationId: auth.currentUser.uid, userId: auth.currentUser.uid }),
-              });
-              const data = await res.json();
-              if (data.success) {
-                alert("HLS stream generation started! It may take a few minutes for your station to go live.");
-              } else {
-                alert(data.error || "Failed to generate stream.");
+        <div className="space-y-1">
+          <Button
+            variant="secondary"
+            size="lg"
+            disabled={!stationExists}
+            onClick={async () => {
+              if (!auth?.currentUser) return;
+              setHlsStatus("generating");
+              try {
+                const res = await fetch("/api/radio/generate-stream", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ stationId: auth.currentUser.uid, userId: auth.currentUser.uid }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setHlsStatus("success");
+                  alert("HLS stream generation started! It may take a few minutes for your station to go live.");
+                } else {
+                  setHlsStatus("error");
+                  alert(data.error || "Failed to generate stream. Make sure the media worker is deployed.");
+                }
+              } catch (e) {
+                setHlsStatus("error");
+                console.error(e);
               }
-            } catch (e) { console.error(e); }
-          }}
-          data-testid="radio-generate-stream-btn"
-        >
-          Generate HLS Stream
-        </Button>
+            }}
+            data-testid="radio-generate-stream-btn"
+          >
+            {hlsStatus === "generating" ? "Generating..." : "Generate HLS Stream"}
+          </Button>
+          {!stationExists && (
+            <p className="text-xs text-stage-mutetext">Launch your station first to enable HLS generation.</p>
+          )}
+        </div>
         <Button
           variant="primary"
           size="lg"
