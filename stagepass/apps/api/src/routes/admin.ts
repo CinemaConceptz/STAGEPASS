@@ -13,7 +13,7 @@ adminRouter.post("/claim", requireAuth, async (req: Request, res: Response) => {
   try {
     // Check if user is already admin
     const userSnap = await db.collection("users").doc(uid).get();
-    if (userSnap.exists() && userSnap.data()?.isAdmin) {
+    if (userSnap.exists && userSnap.data()?.isAdmin) {
       return res.json({ success: true, message: "Already an admin" });
     }
 
@@ -51,7 +51,7 @@ adminRouter.get("/status", requireAuth, async (req: Request, res: Response) => {
   const db = getFirestore(adminApp);
   try {
     const snap = await db.collection("users").doc(uid).get();
-    return res.json({ isAdmin: snap.exists() && snap.data()?.isAdmin === true });
+    return res.json({ isAdmin: snap.exists && snap.data()?.isAdmin === true });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
   }
