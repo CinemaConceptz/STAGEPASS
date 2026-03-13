@@ -37,11 +37,12 @@ apps/
 - **Mood filter**: Auto-DJ can filter tracks by mood tags, falls back to all tracks if filter yields empty
 - **Follow system**: FollowButton component with follow/unfollow toggle, follower count, onToggle callback
 - **Notifications**: NotificationBell with polling (30s), mark-all-read, notification dropdown
-- **Server-side APIs**: /api/follow/[creatorId] (GET/POST/DELETE), /api/notifications (GET/POST)
-- **Schedule API updated**: GET now returns crossfade/mood settings
-- **Station API updated**: /api/radio/station/now passes mood filter to getNowPlaying
-- **Scheduler fix**: Fixed critical `orderedRaw` undefined variable bug → replaced with `pool`
-- **Radio page fix**: Added missing `return` statement, fixed imports (Star, Zap), removed old audioRef
+- **Comments system**: Replaced LiveChat with Comments on recorded video pages (GET/POST /api/comments/[contentId])
+- **Play icon fix**: ContentCard play icons now vibrant (gradient bg, stage-mint hover, larger button)
+- **Hero play icon**: Updated from barely-visible to prominent stage-mint styled icon
+- **Server-side APIs**: /api/follow/[creatorId], /api/notifications, /api/comments/[contentId]
+- **Scheduler fix**: Fixed critical `orderedRaw` undefined variable bug
+- **Radio page fix**: Added missing `return` statement, fixed imports, removed old audioRef
 - **Favicon**: Created SVG favicon (was 0-byte .ico)
 
 ### React Native Mobile App (Expo)
