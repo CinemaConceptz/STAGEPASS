@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Download, Check, FileCode, Shield, Radio, Video, Users, Sparkles, Monitor, Smartphone, Zap, Wifi, RefreshCw, Link } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
-const REACT_APP_BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+const REACT_APP_BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function Home() {
   const [downloading, setDownloading] = useState(false);

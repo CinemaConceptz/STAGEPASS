@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import axios from 'axios';
 
-const REACT_APP_BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+const REACT_APP_BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function ButlerChat() {
   const [isOpen, setIsOpen] = useState(false);
