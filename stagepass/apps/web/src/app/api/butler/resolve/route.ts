@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const userMessage = body.text || "";
 
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ text: "Encore is offline. Google API key not configured.", action: "NONE", emotion: "CONCERNED" });
     }

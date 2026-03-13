@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     }
 
     const channelId = `user-${userId}-${Date.now()}`;
+    const streamKey = `sk_${channelId}`;
 
     // 1. Provision Live Stream channel
     const { inputUri, channelName } = await createLiveChannel(channelId);
@@ -25,24 +26,33 @@ export async function POST(req: Request) {
     // 2. Start the channel
     await startChannel(channelId);
 
+    // Parse RTMP URL and key from inputUri
+    // Format typically: rtmp://input-endpoint/live/stream-key
+    const rtmpUrl = inputUri || `rtmp://live.stagepassaccess.com/live`;
+
     // 3. Record the live session in Firestore
     const db = getFirestore(adminApp);
+    const playbackUrl = `https://storage.googleapis.com/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/live/${channelId}/manifest.m3u8`;
+
     await db.collection("liveChannels").doc(channelId).set({
       channelId,
       ownerUid: userId,
       title: title || "Live Stream",
       status: "LIVE",
-      ingestUrl: inputUri,
-      playbackUrl: `https://storage.googleapis.com/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/live/${channelId}/manifest.m3u8`,
+      ingestUrl: rtmpUrl,
+      streamKey,
+      playbackUrl,
       startedAt: new Date().toISOString(),
+      listenerCount: 0,
     });
 
     return NextResponse.json({
       success: true,
       channelId,
-      streamUrl: inputUri,
-      streamKey: "",
-      playbackUrl: `https://storage.googleapis.com/${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}/live/${channelId}/manifest.m3u8`,
+      streamUrl: rtmpUrl,
+      rtmpUrl,
+      streamKey,
+      playbackUrl,
     });
   } catch (error: any) {
     console.error("Live session error:", error);

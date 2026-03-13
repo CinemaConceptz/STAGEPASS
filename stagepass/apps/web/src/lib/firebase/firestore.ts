@@ -6,6 +6,14 @@ import {
 } from "firebase/firestore";
 import { db } from "./client";
 
+// ─── Timeout helper ───────────────────────────────────────────────────────────
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface ContentItem {
   id: string;
@@ -73,18 +81,18 @@ export async function getRecentContent(): Promise<ContentItem[]> {
   if (!db) return [];
   try {
     const q = query(collection(db, "content"), orderBy("createdAt", "desc"), limit(20));
-    const snapshot = await getDocs(q);
+    const snapshot = await withTimeout(getDocs(q), 8000, { docs: [] } as any);
     return snapshot.docs
-      .map(d => mapContent(d.data(), d.id))
-      .filter(c => !c.status || c.status === "READY");
+      .map((d: any) => mapContent(d.data(), d.id))
+      .filter((c: ContentItem) => !c.status || c.status === "READY");
   } catch (e) { return []; }
 }
 
 export async function getContentById(id: string): Promise<ContentItem | null> {
   if (!db) return null;
   try {
-    const snap = await getDoc(doc(db, "content", id));
-    if (!snap.exists()) return null;
+    const snap = await withTimeout(getDoc(doc(db, "content", id)), 8000, null as any);
+    if (!snap || !snap.exists()) return null;
     return mapContent(snap.data(), snap.id);
   } catch (e) { return null; }
 }
@@ -101,7 +109,7 @@ export async function getCreatorBySlug(slug: string): Promise<Creator | null> {
   if (!db) return null;
   try {
     const q = query(collection(db, "creators"), where("slug", "==", slug), limit(1));
-    const snap = await getDocs(q);
+    const snap = await withTimeout(getDocs(q), 8000, { empty: true, docs: [] } as any);
     if (snap.empty) return null;
     const d = snap.docs[0].data();
     return { uid: snap.docs[0].id, slug: d.slug, displayName: d.displayName || slug, bio: d.bio, avatarUrl: d.avatarUrl, type: d.type, followerCount: d.followerCount || 0, isAdmin: d.isAdmin };
@@ -112,8 +120,8 @@ export async function getContentByCreator(creatorId: string): Promise<ContentIte
   if (!db) return [];
   try {
     const q = query(collection(db, "content"), where("creatorId", "==", creatorId), orderBy("createdAt", "desc"), limit(12));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => mapContent(d.data(), d.id)).filter(c => !c.status || c.status === "READY");
+    const snap = await withTimeout(getDocs(q), 8000, { docs: [] } as any);
+    return snap.docs.map((d: any) => mapContent(d.data(), d.id)).filter((c: ContentItem) => !c.status || c.status === "READY");
   } catch (e) { return []; }
 }
 
@@ -121,8 +129,8 @@ export async function getAllContent(): Promise<ContentItem[]> {
   if (!db) return [];
   try {
     const q = query(collection(db, "content"), orderBy("createdAt", "desc"), limit(50));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => mapContent(d.data(), d.id));
+    const snap = await withTimeout(getDocs(q), 8000, { docs: [] } as any);
+    return snap.docs.map((d: any) => mapContent(d.data(), d.id));
   } catch (e) { return []; }
 }
 
@@ -131,8 +139,8 @@ export async function getLiveChannels(): Promise<any[]> {
   if (!db) return [];
   try {
     const q = query(collection(db, "liveChannels"), where("status", "==", "LIVE"), orderBy("startedAt", "desc"), limit(10));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const snap = await withTimeout(getDocs(q), 8000, { docs: [] } as any);
+    return snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
   } catch (e) { return []; }
 }
 
@@ -147,8 +155,8 @@ export async function trackListener(channelCollection: string, channelId: string
 export async function isFollowing(followerId: string, creatorId: string): Promise<boolean> {
   if (!db) return false;
   try {
-    const snap = await getDoc(doc(db, "follows", `${followerId}_${creatorId}`));
-    return snap.exists();
+    const snap = await withTimeout(getDoc(doc(db, "follows", `${followerId}_${creatorId}`)), 8000, null as any);
+    return snap ? snap.exists() : false;
   } catch (e) { return false; }
 }
 
@@ -173,13 +181,13 @@ export async function unfollowCreator(followerId: string, creatorId: string) {
 export async function getFollowedFeed(userId: string): Promise<ContentItem[]> {
   if (!db) return [];
   try {
-    const followsSnap = await getDocs(query(collection(db, "follows"), where("followerId", "==", userId)));
+    const followsSnap = await withTimeout(getDocs(query(collection(db, "follows"), where("followerId", "==", userId))), 8000, { empty: true, docs: [] } as any);
     if (followsSnap.empty) return [];
-    const creatorIds = followsSnap.docs.map(d => d.data().creatorId);
+    const creatorIds = followsSnap.docs.map((d: any) => d.data().creatorId);
     const chunk = creatorIds.slice(0, 10);
     const q = query(collection(db, "content"), where("creatorId", "in", chunk), orderBy("createdAt", "desc"), limit(20));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => mapContent(d.data(), d.id)).filter(c => c.status === "READY");
+    const snap = await withTimeout(getDocs(q), 8000, { docs: [] } as any);
+    return snap.docs.map((d: any) => mapContent(d.data(), d.id)).filter((c: ContentItem) => c.status === "READY");
   } catch (e) { return []; }
 }
 
@@ -227,17 +235,17 @@ export async function getCreatorAnalytics(creatorId: string) {
   if (!db) return null;
   try {
     const [contentSnap, followsSnap, creatorSnap] = await Promise.all([
-      getDocs(query(collection(db, "content"), where("creatorId", "==", creatorId))),
-      getDocs(query(collection(db, "follows"), where("creatorId", "==", creatorId))),
-      getDoc(doc(db, "creators", creatorId)),
+      withTimeout(getDocs(query(collection(db, "content"), where("creatorId", "==", creatorId))), 8000, { docs: [], size: 0 } as any),
+      withTimeout(getDocs(query(collection(db, "follows"), where("creatorId", "==", creatorId))), 8000, { size: 0, docs: [] } as any),
+      withTimeout(getDoc(doc(db, "creators", creatorId)), 8000, null as any),
     ]);
-    const contents = contentSnap.docs.map(d => d.data());
-    const totalViews = contents.reduce((s, c) => s + (c.viewCount || 0), 0);
+    const contents = contentSnap.docs.map((d: any) => d.data());
+    const totalViews = contents.reduce((s: number, c: any) => s + (c.viewCount || 0), 0);
     return {
       totalContent: contents.length,
       totalViews,
       followers: followsSnap.size,
-      content: contentSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+      content: contentSnap.docs.map((d: any) => ({ id: d.id, ...d.data() })),
     };
   } catch (e) { return null; }
 }
@@ -246,17 +254,37 @@ export async function getAdminStats() {
   if (!db) return null;
   try {
     const [usersSnap, contentSnap, stationsSnap, liveSnap] = await Promise.all([
-      getDocs(query(collection(db, "users"), limit(200))),
-      getDocs(query(collection(db, "content"), limit(200))),
-      getDocs(query(collection(db, "radioStations"), limit(200))),
-      getDocs(query(collection(db, "liveChannels"), limit(200))),
+      withTimeout(getDocs(query(collection(db, "users"), limit(200))), 8000, { size: 0, docs: [] } as any),
+      withTimeout(getDocs(query(collection(db, "content"), limit(200))), 8000, { size: 0, docs: [] } as any),
+      withTimeout(getDocs(query(collection(db, "radioStations"), limit(200))), 8000, { size: 0, docs: [] } as any),
+      withTimeout(getDocs(query(collection(db, "liveChannels"), limit(200))), 8000, { size: 0, docs: [] } as any),
     ]);
     return {
       totalUsers: usersSnap.size,
       totalContent: contentSnap.size,
       totalStations: stationsSnap.size,
       totalLiveSessions: liveSnap.size,
-      recentContent: contentSnap.docs.slice(0, 20).map(d => ({ id: d.id, ...d.data() })),
+      recentContent: contentSnap.docs.slice(0, 20).map((d: any) => ({ id: d.id, ...d.data() })),
     };
   } catch (e) { return null; }
+}
+
+// ─── User Profile ─────────────────────────────────────────────────────────────
+export async function getUserProfile(uid: string) {
+  if (!db) return null;
+  try {
+    const snap = await withTimeout(getDoc(doc(db, "users", uid)), 8000, null as any);
+    if (!snap || !snap.exists()) return null;
+    return { uid: snap.id, ...snap.data() };
+  } catch (e) { return null; }
+}
+
+export async function updateUserProfile(uid: string, data: Record<string, any>) {
+  if (!db) return;
+  await updateDoc(doc(db, "users", uid), { ...data, updatedAt: new Date().toISOString() });
+}
+
+export async function updateCreatorProfile(uid: string, data: Record<string, any>) {
+  if (!db) return;
+  await updateDoc(doc(db, "creators", uid), { ...data, updatedAt: new Date().toISOString() });
 }

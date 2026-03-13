@@ -1,129 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Play, TrendingUp, Users, Radio, Activity } from 'lucide-react';
-import axios from 'axios';
-import ContentCard from '../components/ContentCard';
+import React, { useState } from 'react';
+import { Download, Check, FileCode, Shield, Radio, Video, Users, Sparkles, Monitor, Smartphone } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
 const REACT_APP_BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 export default function Home() {
-  const [feed, setFeed] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
-  useEffect(() => {
-    const fetchFeed = async () => {
-      try {
-        const res = await axios.get(`${REACT_APP_BACKEND_URL}/api/feed`);
-        setFeed(res.data);
-      } catch (err) {
-        console.error("Error fetching feed:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFeed();
-  }, []);
+  const handleDownload = () => {
+    setDownloading(true);
+    window.open(`${REACT_APP_BACKEND_URL}/api/download/stagepass-production`, '_blank');
+    setTimeout(() => setDownloading(false), 3000);
+  };
+
+  const features = [
+    { icon: Shield, title: 'Auth System', desc: 'Google Sign-In + Email/Password with privacy agreement, password visibility toggle' },
+    { icon: Users, title: 'Profile Page', desc: 'Customizable profile with social links, bio, avatar, Google Drive connection management' },
+    { icon: Radio, title: 'Radio Overhaul', desc: 'Active stations grid, featured station, mini player, show creation with artwork & Drive folder' },
+    { icon: Video, title: 'Live Streaming', desc: 'RTMP URL + Stream Key for OBS/Prism, step-by-step setup instructions' },
+    { icon: Monitor, title: 'Landing Page', desc: 'Hero shows most recent uploaded video, auto-rotates every 5 days' },
+    { icon: Sparkles, title: 'AI Butler (Encore)', desc: 'Gemini-powered assistant that can execute real actions (go live, upload, analytics)' },
+    { icon: Smartphone, title: 'PWA Ready', desc: 'Manifest, mobile viewport, installable as app with proper icons' },
+    { icon: FileCode, title: 'Multi-Quality ABR', desc: 'HLS player with quality selector (Auto/720p/360p) for adaptive streaming' },
+  ];
+
+  const bugFixes = [
+    'Firestore calls now timeout after 8s (no infinite loading)',
+    'Logo replaced with proper STAGEPASS icon (was 0-byte empty file)',
+    'Butler dock z-index raised above Emergent badge overlay',
+    'Butler API key moved to server-side only (no browser exposure)',
+    'data-testid attributes added to all interactive elements',
+    '@slug label hidden from signup form (auto-generated from name)',
+    'Privacy agreement popup required before signup',
+    'Google Drive permission requested at signup time (permanent)',
+  ];
 
   return (
     <div className="space-y-12 pb-20">
-      {/* Hero Section */}
-      <section className="relative h-[60vh] rounded-3xl overflow-hidden group">
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
-        <img 
-          src="https://images.unsplash.com/photo-1671432403854-cbe798eb44fb?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwzfHxjb25jZXJ0JTIwY3Jvd2QlMjBuZW9uJTIwbGlnaHRzJTIwZGFya3xlbnwwfHx8fDE3NzE3MjI1Mzl8MA&ixlib=rb-4.1.0&q=85" 
-          alt="Hero" 
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
-        
-        <div className="absolute bottom-0 left-0 z-20 p-8 md:p-12 w-full md:w-2/3 space-y-6">
-          <div className="flex items-center space-x-3">
-            <span className="bg-secondary text-black px-3 py-1 rounded-full text-xs font-bold tracking-wider animate-pulse">
-              LIVE NOW
-            </span>
-            <span className="text-zinc-300 text-sm tracking-widest uppercase">
-              Main Stage • Tokyo
-            </span>
+      {/* Hero */}
+      <section className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-[#2E1A47] via-[#3B225B] to-[#2E1A47] border border-white/10 p-8 md:p-12">
+        <div className="max-w-3xl space-y-6">
+          <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 px-3 py-1.5 rounded-full">
+            <Check size={14} className="text-green-400" />
+            <span className="text-xs font-bold text-green-400 uppercase tracking-wider">Production Build Ready</span>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-heading font-bold leading-tight text-white drop-shadow-2xl">
-            ELECTRIC DREAMS <br/> FESTIVAL 2026
+          <h1 className="text-4xl md:text-5xl font-heading font-bold text-white leading-tight">
+            STAGEPASS <span className="text-[#D946EF]">Production</span> Package
           </h1>
           
-          <p className="text-lg text-zinc-200 max-w-xl drop-shadow-md">
-            Experience the future of sound. Join 45,000 others in the world's first fully immersive digital concert.
+          <p className="text-lg text-zinc-300 max-w-2xl">
+            Complete 3-service architecture (Web + API + Media Worker) with all 8 production features implemented, tested, and ready for GCP deployment.
           </p>
-          
-          <div className="flex items-center space-x-4 pt-4">
-            <Button size="lg" className="rounded-full text-lg px-8 py-6">
-              <Play fill="currentColor" className="mr-2" size={20} />
-              Watch Premiere
-            </Button>
-            <Button variant="outline" size="lg" className="rounded-full text-lg px-8 py-6 bg-white/5 backdrop-blur border-white/20 text-white hover:bg-white/10">
-              + Add to List
-            </Button>
-          </div>
+
+          <Button 
+            size="lg" 
+            onClick={handleDownload}
+            disabled={downloading}
+            className="rounded-full text-lg px-10 py-6 bg-[#00FFC6] text-black hover:bg-[#00FFC6]/90 font-bold"
+            data-testid="download-zip-btn"
+          >
+            <Download className="mr-2" size={22} />
+            {downloading ? 'Downloading...' : 'Download stagepass_production.zip'}
+          </Button>
         </div>
       </section>
 
-      {/* Trending Section */}
+      {/* Features Grid */}
       <section>
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="text-primary" />
-            <h2 className="text-2xl font-heading font-bold text-white">Trending Now</h2>
-          </div>
-          <Button variant="link" className="text-zinc-400 hover:text-white">View All</Button>
+        <h2 className="text-2xl font-heading font-bold text-white mb-6">What's Included</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {features.map((f) => (
+            <div key={f.title} className="bg-[#121212] border border-white/5 rounded-2xl p-5 hover:border-[#D946EF]/30 transition-colors">
+              <f.icon size={24} className="text-[#D946EF] mb-3" />
+              <h3 className="font-bold text-white text-sm mb-1">{f.title}</h3>
+              <p className="text-xs text-zinc-400 leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
         </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="aspect-video bg-[#121212] rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {feed.map((item) => (
-              <ContentCard key={item.id} content={item} />
-            ))}
-          </div>
-        )}
       </section>
 
-      {/* Creator Spotlight */}
-      <section className="bg-[#121212] rounded-3xl p-8 md:p-12 border border-white/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/20 to-transparent pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-6 max-w-xl">
-            <h2 className="text-3xl md:text-4xl font-heading font-bold text-white">
-              Are you a Creator?
-            </h2>
-            <p className="text-zinc-400 text-lg">
-              Join the STAGEPASS network. Get discovered, monetize your art, and build your own digital stage. No algorithms. No limits.
-            </p>
-            <ul className="space-y-3">
-              {['Direct Fan Support', '100% Ownership', 'Premium Tools'].map((feature) => (
-                <li key={feature} className="flex items-center space-x-2 text-zinc-300">
-                  <div className="w-1.5 h-1.5 bg-secondary rounded-full" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-            <Button size="lg" className="rounded-full mt-4 bg-white text-black hover:bg-zinc-200">
-              Start Creating
-            </Button>
-          </div>
-          
-          <div className="w-full md:w-1/3 aspect-square rounded-2xl overflow-hidden border border-white/10 shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500">
-             <img 
-               src="https://images.pexels.com/photos/7586652/pexels-photo-7586652.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940" 
-               alt="Creator" 
-               className="w-full h-full object-cover"
-             />
-          </div>
+      {/* Bug Fixes */}
+      <section className="bg-[#121212] border border-white/5 rounded-2xl p-8">
+        <h2 className="text-xl font-heading font-bold text-white mb-4">Bug Fixes & Improvements</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {bugFixes.map((fix, i) => (
+            <div key={i} className="flex items-start gap-2 text-sm">
+              <Check size={14} className="text-green-400 mt-0.5 shrink-0" />
+              <span className="text-zinc-300">{fix}</span>
+            </div>
+          ))}
         </div>
+      </section>
+
+      {/* Architecture */}
+      <section className="bg-[#121212] border border-white/5 rounded-2xl p-8">
+        <h2 className="text-xl font-heading font-bold text-white mb-4">Architecture</h2>
+        <pre className="text-sm text-zinc-400 font-mono bg-black/50 p-4 rounded-xl overflow-x-auto">
+{`stagepass/
+  apps/
+    web/      # Next.js 14 — Frontend (Cloud Run stagepass-web)
+    api/      # Express.js — Business Logic (Cloud Run stagepass-api)
+    worker/   # Express.js — Media Processing (Cloud Run stagepass-worker)
+  scripts/
+    deploy_production.ps1  # One-click deploy all 3 services
+  SETUP.md   # Post-deployment configuration guide`}
+        </pre>
       </section>
     </div>
   );

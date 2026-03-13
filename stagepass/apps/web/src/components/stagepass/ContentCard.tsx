@@ -18,7 +18,7 @@ export default function ContentCard({
   const isLive = type === "LIVE";
 
   return (
-    <Card className="group cursor-pointer hover:border-stage-indigo/50 transition-all duration-300">
+    <Card className="group cursor-pointer hover:border-stage-indigo/50 transition-all duration-300" data-testid={`content-card-${id}`}>
       <div className="relative aspect-video rounded-lg overflow-hidden bg-black mb-4">
         {thumbnail ? (
           <img src={thumbnail} alt={title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />

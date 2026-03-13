@@ -33,20 +33,20 @@ export default function LivePage() {
   }, [selected?.id]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="live-page">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Live Now</h1>
+        <h1 className="text-3xl font-bold" data-testid="live-heading">Live Now</h1>
         <Link href="/studio/live">
-          <Button variant="primary">Go Live</Button>
+          <Button variant="primary" data-testid="go-live-btn">Go Live</Button>
         </Link>
       </div>
 
       {channels.length === 0 ? (
-        <div className="text-center py-24 space-y-4">
+        <div className="text-center py-24 space-y-4" data-testid="live-empty">
           <Video size={48} className="mx-auto text-stage-mutetext" />
           <p className="text-stage-mutetext text-lg">No live streams right now.</p>
           <Link href="/studio/live">
-            <Button variant="secondary">Be the first to go live</Button>
+            <Button variant="secondary" data-testid="live-empty-cta">Be the first to go live</Button>
           </Link>
         </div>
       ) : (

@@ -1,0 +1,27 @@
+{
+  "name": "STAGEPASS",
+  "short_name": "StagePass",
+  "description": "Creator-first platform for live streams, video premieres, and radio stations.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2E1A47",
+  "theme_color": "#D946EF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "music", "social"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}

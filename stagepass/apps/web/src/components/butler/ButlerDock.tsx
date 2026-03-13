@@ -17,7 +17,7 @@ export default function ButlerDock() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+    <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-4" data-testid="butler-dock">
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -115,7 +115,8 @@ export default function ButlerDock() {
         onClick={toggle}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="h-14 w-14 rounded-full bg-stage-indigo shadow-glowIndigo flex items-center justify-center text-white border-2 border-white/10 z-50 hover:border-stage-mint transition-colors"
+        className="h-14 w-14 rounded-full bg-stage-indigo shadow-glowIndigo flex items-center justify-center text-white border-2 border-white/10 z-[60] hover:border-stage-mint transition-colors"
+        data-testid="butler-toggle-btn"
       >
         {isOpen ? <X size={24} /> : <Sparkles size={24} />}
       </motion.button>
