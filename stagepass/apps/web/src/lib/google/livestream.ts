@@ -10,8 +10,8 @@ export async function createLiveChannel(channelId: string) {
 
   const parent = client.locationPath(PROJECT_ID, LOCATION);
 
-  // 1. Create Input (RTMP Ingest)
-  const inputId = `input-${channelId}`;
+  // Ensure inputId is also GCP-safe
+  const inputId = `input-${channelId}`.slice(0, 63);
   
   const createInputResponse = await client.createInput({
     parent,

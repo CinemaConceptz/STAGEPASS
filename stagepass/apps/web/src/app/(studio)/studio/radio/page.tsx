@@ -8,8 +8,10 @@ import ImageUploader from "@/components/studio/ImageUploader";
 import { Radio, Music, CheckCircle, X, CheckSquare, Square, Calendar } from "lucide-react";
 import { auth } from "@/lib/firebase/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RadioStudio() {
+  const router = useRouter();
   const [stationName, setStationName] = useState("");
   const [genre, setGenre] = useState("House");
   const [desc, setDesc] = useState("");
@@ -63,7 +65,9 @@ export default function RadioStudio() {
 
       if (data.success) {
         setSuccess(true);
-        setTimeout(() => setSuccess(false), 4000);
+        setTimeout(() => {
+          router.push("/radio");
+        }, 1500);
       }
     } catch (err) {
       console.error(err);

@@ -5,6 +5,17 @@ import { adminApp } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
+// Sanitize ID for GCP: lowercase, alphanumeric + hyphens, 1-63 chars, must start/end with alphanumeric
+function sanitizeGcpId(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")  // Replace invalid chars with hyphens
+    .replace(/-+/g, "-")           // Collapse multiple hyphens
+    .replace(/^-/, "")             // Strip leading hyphen
+    .replace(/-$/, "")             // Strip trailing hyphen
+    .slice(0, 63);                 // Max 63 chars
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -17,8 +28,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const channelId = `user-${userId}-${Date.now()}`;
-    const streamKey = `sk_${channelId}`;
+    // Build a GCP-safe channel ID
+    const ts = Date.now().toString(36); // shorter timestamp
+    const uid = userId.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20);
+    const channelId = sanitizeGcpId(`ch-${uid}-${ts}`);
+    const streamKey = `sk-${uid}-${ts}`;
 
     // 1. Provision Live Stream channel
     const { inputUri, channelName } = await createLiveChannel(channelId);
@@ -26,8 +40,6 @@ export async function POST(req: Request) {
     // 2. Start the channel
     await startChannel(channelId);
 
-    // Parse RTMP URL and key from inputUri
-    // Format typically: rtmp://input-endpoint/live/stream-key
     const rtmpUrl = inputUri || `rtmp://live.stagepassaccess.com/live`;
 
     // 3. Record the live session in Firestore

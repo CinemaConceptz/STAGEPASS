@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       genre: genre || "Other",
       description: description || "",
       trackCount: trackList.length,
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       autoDjEnabled: true,
       autoDjShuffle: false,
