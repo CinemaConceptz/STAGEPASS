@@ -1,13 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Mic, Send, X, Sparkles, ChevronDown } from "lucide-react";
+import { Mic, Send, ChevronDown, Zap, Loader, X, Sparkles } from "lucide-react";
 import { useButler } from "./useButler";
 import { clsx } from "clsx";
 import { useState } from "react";
 
 export default function ButlerDock() {
-  const { isOpen, toggle, emotion, messages, sendMessage, isListening, startListening } = useButler();
+  const { isOpen, toggle, emotion, messages, sendMessage, isListening, startListening, executeAction, executingAction } = useButler();
   const [input, setInput] = useState("");
 
   const handleSend = () => {
@@ -57,12 +57,22 @@ export default function ButlerDock() {
                   </div>
                   {msg.actions && (
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {msg.actions.map((act, idx) => (
+                      {msg.actions.map((act: any, idx: number) => (
                         <button key={idx} className="text-xs bg-white/5 hover:bg-white/10 border border-white/10 px-2 py-1 rounded-lg text-stage-mint transition-colors">
                           {act.label}
                         </button>
                       ))}
                     </div>
+                  )}
+                  {msg.pendingAction && (
+                    <button
+                      onClick={() => executeAction(msg.pendingAction!.type)}
+                      disabled={executingAction}
+                      className="mt-2 flex items-center gap-1.5 text-xs bg-stage-mint/20 hover:bg-stage-mint/30 border border-stage-mint/40 px-3 py-1.5 rounded-lg text-stage-mint font-bold transition-colors disabled:opacity-50"
+                    >
+                      {executingAction ? <Loader size={12} className="animate-spin" /> : <Zap size={12} />}
+                      {executingAction ? "Executing..." : msg.pendingAction.label}
+                    </button>
                   )}
                 </div>
               ))}

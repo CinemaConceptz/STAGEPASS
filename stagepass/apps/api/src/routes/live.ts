@@ -60,6 +60,29 @@ liveRouter.post("/session", requireAuth, async (req: Request, res: Response) => 
       startedAt: new Date().toISOString(),
     });
 
+    // Notify all followers
+    try {
+      const followsSnap = await db.collection("follows").where("creatorId", "==", uid).get();
+      const creatorSnap = await db.collection("creators").doc(uid).get();
+      const creatorName = creatorSnap.data()?.displayName || "A creator";
+      const batch = db.batch();
+      followsSnap.docs.forEach(d => {
+        const followerId = d.data().followerId;
+        const notifRef = db.collection("notifications").doc(followerId).collection("items").doc();
+        batch.set(notifRef, {
+          type: "LIVE",
+          title: `${creatorName} is live`,
+          body: `${creatorName} just started streaming: "${title || "Live Stream"}"`,
+          read: false,
+          link: `/live`,
+          createdAt: new Date().toISOString(),
+        });
+      });
+      if (!followsSnap.empty) await batch.commit();
+    } catch (notifErr) {
+      console.warn("[live] Could not send notifications:", notifErr);
+    }
+
     return res.json({
       success: true,
       channelId,

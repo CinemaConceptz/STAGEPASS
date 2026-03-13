@@ -1,13 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Prevent Next.js from bundling heavy server-only GCP packages
-  // These run as native Node.js requires on Cloud Run
+  // Next.js 14.2.x uses experimental.serverComponentsExternalPackages
   experimental: {
-    serverExternalPackages: [
+    serverComponentsExternalPackages: [
       "@google-cloud/storage",
       "@google-cloud/video-transcoder",
       "@google-cloud/livestream",
+      "@google-cloud/pubsub",
       "firebase-admin",
       "googleapis",
     ],

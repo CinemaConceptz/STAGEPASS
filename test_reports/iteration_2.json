@@ -1,0 +1,103 @@
+{
+  "summary": "STAGEPASS Next.js 14 frontend testing completed. All public pages load correctly. Navigation, auth guards, butler dock, login/signup forms all pass. 2 pages get stuck in infinite loading when Firebase is unavailable (content/[id] and c/[slug]) — a resiliency issue that needs a loading timeout. API routes work correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/butler/resolve",
+        "issue": "Returns 'Neural link disrupted' fallback because NEXT_PUBLIC_GOOGLE_API_KEY is not configured with a real key — expected in test env but needs real key in production"
+      },
+      {
+        "endpoint": "/api/analytics",
+        "issue": "Returns 401 (correct) but admin SDK (firebase-admin) needs real GCP service account credentials to function in production"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "HomePage feed / ContentPage / CreatorPage",
+        "issue": "Pages using getDocs()/getContentById() hang indefinitely in loading state when Firebase Firestore is unavailable — no timeout or error state fallback. Firebase SDK with dummy/invalid project credentials makes requests that never resolve (WebChannel retry loop). Pages show spinner forever.",
+        "selector": "text=Loading Stage...",
+        "priority": "MEDIUM",
+        "affected_pages": ["/", "/content/[id]", "/c/[slug]"]
+      },
+      {
+        "component": "Nav logo",
+        "issue": "public/logo.jpg is a 0-byte empty file — causes 400 errors from Next.js image optimizer. The onError handler hides it gracefully but the logo circle in nav shows as a loading/broken state.",
+        "selector": "img[alt='StagePass']",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "Firebase Firestore connection with dummy credentials",
+        "issue": "Firebase SDK with a valid-format but fake API key (AIzaSyDummy...) and fake projectId (stagepass-dummy) initializes successfully but then hangs on getDocs()/getDoc() calls instead of failing fast. The try-catch blocks in firestore.ts don't get invoked because the promises never reject — they just hang in the Firestore WebChannel retry loop.",
+        "affected_selectors": ["text=Loading Stage...", ".animate-spin"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "All pages",
+        "issues": [
+          "Most interactive elements (butler button, form submit buttons, nav links) lack data-testid attributes — only NotificationBell and FollowButton have them",
+          "Homepage hero area right side is empty (no image/content) — the gradient background fills the space but the visual design could benefit from content there",
+          "Radio page station grid area is completely empty (no stations) — only heading shows. An empty state message would improve UX"
+        ]
+      }
+    ]
+  },
+  "passed_tests": [
+    "Homepage loads — STAGEPASS brand visible, hero section with Electric Dreams Festival, navigation links",
+    "Navigation: Explore, Live, Radio links all render correctly",
+    "Explore page — category filter tabs (All, Music, DJ Sets, Film, Business, Gaming), no-content empty state",
+    "Live page — 'No live streams right now' empty state with Video icon and CTA button",
+    "Radio page — 'STAGEPASS LIVE / Global Creator Broadcast Network' renders",
+    "Login page — email/password form, Sign in button, error state on invalid login",
+    "Signup page — displayName, handle, creatorType select, email, password fields all visible",
+    "Studio auth guard — /studio redirects to /login in ~5 seconds (client-side Firebase auth check working)",
+    "Admin auth guard — /admin redirects to /login in ~5 seconds",
+    "Butler dock — visible on homepage (Sparkles icon), opens on click, shows ENCORE header, accepts message input, sends via API, shows graceful fallback",
+    "Notification bell — correctly absent when not authenticated (only renders for logged-in users)",
+    "Log in / Join buttons — visible in nav when not authenticated",
+    "Footer — STAGEPASS brand, copyright, legal links all present",
+    "/api/butler/resolve POST — returns valid JSON {text, action, emotion} (graceful offline fallback)",
+    "/api/analytics GET — returns 401 Unauthorized without auth token (correct auth guard)"
+  ],
+  "failed_tests": [
+    "/content/[id] — stuck in loading spinner (Firebase getDocs hanging with dummy credentials, no timeout fallback)",
+    "/c/[slug] — stuck in loading spinner (same root cause as content page)",
+    "Homepage feed — stays in 'Loading Stage...' for 12+ seconds (Firebase hanging)"
+  ],
+  "test_report_links": ["/app/test_reports/iteration_2.json"],
+  "action_items": [
+    "IMPORTANT: Replace public/logo.jpg with actual non-empty logo image file",
+    "Add loading timeout (e.g., 10 seconds) with error fallback state to getRecentContent, getContentById, getCreatorBySlug calls — currently they hang indefinitely when Firebase is unavailable",
+    "Consider adding a Promise.race() with a timeout in firestore.ts helper functions, or use AbortController for Firestore fetch calls",
+    "Add data-testid attributes to: butler dock button, nav links, form submit buttons, feed sort dropdown, and content cards",
+    "Butler API key (NEXT_PUBLIC_GOOGLE_API_KEY) needs a real Gemini API key set in production .env"
+  ],
+  "critical_code_review_comments": [
+    "RESILIENCY: firestore.ts functions use try-catch but Firebase SDK getDocs()/getDoc() promises never reject when offline — they enter WebChannel retry loop. Add explicit timeout: Promise.race([firestoreCall, timeout(10000)]) pattern",
+    "MISSING FILE: public/logo.jpg is 0 bytes — this is a broken asset that needs to be replaced",
+    "NO LOADING TIMEOUT: HomePage (loading forever), ContentPage, CreatorPage all lack a maximum loading timeout — shows indefinite spinner in poor network conditions",
+    "DATA-TESTID: Only FollowButton and NotificationBell have data-testid — add to butler button, nav links, form fields for better testability",
+    "BUTLER API KEY: Butler route uses NEXT_PUBLIC_ prefix for a server-side API key (NEXT_PUBLIC_GOOGLE_API_KEY) — this exposes the key in the browser bundle. Should use GOOGLE_API_KEY (without NEXT_PUBLIC_) since it's used in a server route"
+  ],
+  "updated_files": [
+    "/app/stagepass/apps/web/.env.local"
+  ],
+  "success_rate": {
+    "backend_api": "100% (2/2 APIs return correct responses)",
+    "frontend": "75% (12/16 features fully verified, 3 stuck due to Firebase hang, 1 minor asset issue)"
+  },
+  "seed_data_creation": "Created /app/stagepass/apps/web/.env.local with dummy Firebase credentials to allow UI testing",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "App is STAGEPASS Next.js 14 at /app/stagepass/apps/web/. Start dev server: cd /app/stagepass/apps/web && nohup PORT=3001 NODE_OPTIONS='--max-old-space-size=1024' npx next dev -p 3001 > /tmp/nextjs.log 2>&1 &. .env.local with dummy Firebase credentials already exists. Main issues: (1) logo.jpg is 0-bytes needs replacement, (2) Firebase Firestore getDocs() hangs with dummy credentials causing infinite loading on homepage feed, /content/[id], /c/[slug]. With real Firebase credentials these pages would work. Auth guards (/studio, /admin) work correctly redirecting to /login.",
+  "rca_of_firebase_loading_issue": {
+    "root_cause": "Firebase SDK initializes with dummy API key (AIzaSyDummy...) because NEXT_PUBLIC_FIREBASE_API_KEY is set in .env.local. When getDocs/getDoc is called, SDK attempts to connect to firestore.googleapis.com for project 'stagepass-dummy'. The WebChannel (long-polling) connection attempts are retried exponentially. The try-catch in firestore.ts functions doesn't catch this because the promise never rejects — it just retries.",
+    "reproduction_steps": ["Set dummy NEXT_PUBLIC_FIREBASE_* env vars", "Start dev server", "Visit /, /content/[id], /c/[slug]", "Pages show loading spinner indefinitely"],
+    "mitigation": "Wrap all Firestore calls with a timeout: Promise.race([getDocs(q), new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))]). Or check Firebase connection state before making queries."
+  }
+}

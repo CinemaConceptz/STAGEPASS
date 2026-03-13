@@ -3,17 +3,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import ContentCard from "@/components/stagepass/ContentCard";
+import FollowButton from "@/components/stagepass/FollowButton";
 import { getCreatorBySlug, getContentByCreator, type Creator, type ContentItem } from "@/lib/firebase/firestore";
-import { useAuth } from "@/context/AuthContext";
-import Button from "@/components/ui/Button";
-import { Radio, Video, Mic2 } from "lucide-react";
+import { Users } from "lucide-react";
 
 export default function CreatorPage() {
   const params = useParams<{ slug: string }>();
-  const { user } = useAuth();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followerCount, setFollowerCount] = useState(0);
   const [tab, setTab] = useState<"premieres" | "live" | "radio">("premieres");
 
   useEffect(() => {
@@ -21,6 +20,7 @@ export default function CreatorPage() {
     (async () => {
       const c = await getCreatorBySlug(params.slug);
       setCreator(c);
+      setFollowerCount(c?.followerCount || 0);
       if (c) {
         const items = await getContentByCreator(c.uid);
         setContent(items);
@@ -71,13 +71,26 @@ export default function CreatorPage() {
             <p className="text-stage-mutetext text-sm">{creator.type || "Creator"}</p>
           </div>
         </div>
+        {/* Follow button top-right */}
+        <div className="absolute top-4 right-4">
+          <FollowButton
+            creatorId={creator.uid}
+            onToggle={f => setFollowerCount(prev => f ? prev + 1 : Math.max(0, prev - 1))}
+          />
+        </div>
       </div>
 
       <div className="h-8" />
 
-      {creator.bio && (
-        <p className="text-stage-mutetext max-w-2xl">{creator.bio}</p>
-      )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-stage-mutetext text-sm">
+          <Users size={15} />
+          <span><strong className="text-white">{followerCount.toLocaleString()}</strong> followers</span>
+        </div>
+        {creator.bio && (
+          <p className="text-stage-mutetext text-sm max-w-lg">{creator.bio}</p>
+        )}
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-6 border-b border-white/10 text-sm font-medium text-stage-mutetext">
@@ -85,9 +98,7 @@ export default function CreatorPage() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`pb-3 capitalize transition-colors ${
-              tab === t ? "text-white border-b-2 border-stage-mint" : "hover:text-white"
-            }`}
+            className={`pb-3 capitalize transition-colors ${tab === t ? "text-white border-b-2 border-stage-mint" : "hover:text-white"}`}
           >
             {t}
           </button>
@@ -95,9 +106,7 @@ export default function CreatorPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 text-stage-mutetext">
-          No {tab} content yet.
-        </div>
+        <div className="text-center py-16 text-stage-mutetext">No {tab} content yet.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {filtered.map(item => (
