@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { Copy, Radio, Eye, Check, AlertCircle } from "lucide-react";
+import { Copy, Radio, Eye, Check, AlertCircle, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function LiveDashboard() {
   const { user } = useAuth();
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [streamInfo, setStreamInfo] = useState<{
     rtmpUrl: string;
     streamKey: string;
@@ -19,6 +20,25 @@ export default function LiveDashboard() {
   const [error, setError] = useState("");
   const [title, setTitle] = useState("My Live Stream");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Re-registers the stream to the Live page if it wasn't showing
+  const handleRefreshLiveStatus = async () => {
+    if (!user || !streamInfo) return;
+    setRefreshing(true);
+    try {
+      const idToken = await user.getIdToken();
+      await fetch("/api/live/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({
+          channelId: streamInfo.channelId,
+          title,
+          playbackUrl: streamInfo.playbackUrl,
+        }),
+      });
+    } catch (e) { console.error(e); }
+    setRefreshing(false);
+  };
 
   const handleGoLive = async () => {
     if (!user) return;
@@ -181,10 +201,22 @@ export default function LiveDashboard() {
 
             {/* Playback */}
             <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-4">
-              <h2 className="font-bold text-lg flex items-center gap-2">
-                <Eye size={18} className="text-stage-mint" />
-                Viewer Info
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-bold text-lg flex items-center gap-2">
+                  <Eye size={18} className="text-stage-mint" />
+                  Viewer Info
+                </h2>
+                <button
+                  onClick={handleRefreshLiveStatus}
+                  disabled={refreshing}
+                  className="flex items-center gap-1.5 text-xs text-stage-mutetext hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+                  title="Not showing on Live page? Click to re-register your stream"
+                  data-testid="refresh-live-status-btn"
+                >
+                  <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+                  {refreshing ? "Refreshing..." : "Not showing? Refresh"}
+                </button>
+              </div>
               <div>
                 <label className="block text-xs text-stage-mutetext mb-1 uppercase tracking-widest">Playback URL (HLS)</label>
                 <div className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2.5">

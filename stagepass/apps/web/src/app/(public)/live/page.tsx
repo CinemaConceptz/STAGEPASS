@@ -1,43 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
 import Player from "@/components/stagepass/Player";
 import LiveChat from "@/components/stagepass/LiveChat";
 import ContentCard from "@/components/stagepass/ContentCard";
 import Button from "@/components/ui/Button";
-import { getLiveChannels, trackListener } from "@/lib/firebase/firestore";
 import { Video, Users } from "lucide-react";
 import Link from "next/link";
 
 export default function LivePage() {
+  const { user } = useAuth();
   const [channels, setChannels] = useState<any[]>([]);
   const [selected, setSelected] = useState<any | null>(null);
   const [prevId, setPrevId] = useState<string | null>(null);
 
-  useEffect(() => {
-    getLiveChannels().then(ch => {
+  const fetchChannels = useCallback(async () => {
+    try {
+      // Use server-side API (Admin SDK) — bypasses Firestore security rules + no index needed
+      const res = await fetch("/api/live/channels");
+      const data = await res.json();
+      const ch: any[] = data.channels || [];
       setChannels(ch);
-      if (ch.length > 0) setSelected(ch[0]);
-    });
+      setSelected((prev: any) => {
+        if (prev && ch.find((c: any) => c.id === prev.id)) return prev; // keep selection
+        return ch.length > 0 ? ch[0] : null;
+      });
+    } catch { /* silent */ }
   }, []);
 
-  // Track listener count
+  // Initial load + poll every 8 seconds for new/ended streams
   useEffect(() => {
-    if (selected?.id === prevId) return;
-    if (prevId) trackListener("liveChannels", prevId, -1);
-    if (selected?.id) trackListener("liveChannels", selected.id, 1);
+    fetchChannels();
+    const interval = setInterval(fetchChannels, 8000);
+    return () => clearInterval(interval);
+  }, [fetchChannels]);
+
+  // Track listener count on selection change
+  useEffect(() => {
+    if (!selected?.id || selected.id === prevId) return;
+    if (prevId) fetch(`/api/live/channels`); // refresh on switch
     setPrevId(selected?.id || null);
-    return () => {
-      if (selected?.id) trackListener("liveChannels", selected.id, -1);
-    };
   }, [selected?.id]);
+
+  const userIsLive = !!user && channels.some((ch: any) => ch.ownerUid === user.uid);
 
   return (
     <div className="space-y-8" data-testid="live-page">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold" data-testid="live-heading">Live Now</h1>
         <Link href="/studio/live">
-          <Button variant="primary" data-testid="go-live-btn">Go Live</Button>
+          {userIsLive ? (
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/40 text-red-400 font-bold text-sm hover:bg-red-500/20 transition-colors"
+              data-testid="user-is-live-btn"
+            >
+              <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              LIVE
+            </button>
+          ) : (
+            <Button variant="primary" data-testid="go-live-btn">Go Live</Button>
+          )}
         </Link>
       </div>
 
