@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     // Check if already admin
     const userSnap = await db.collection("users").doc(uid).get();
-    if (userSnap.exists() && userSnap.data()?.isAdmin) {
+    if (userSnap.exists && userSnap.data()?.isAdmin) {
       return NextResponse.json({ success: true, message: "Already an admin" });
     }
 

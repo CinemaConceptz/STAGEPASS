@@ -19,6 +19,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [claimingAdmin, setClaimingAdmin] = useState(false);
   const [adminClaimMsg, setAdminClaimMsg] = useState("");
   const [displayName, setDisplayName] = useState("");
