@@ -7,6 +7,14 @@ export const metadata = {
   title: "STAGEPASS",
   description: "You're not posting. You're premiering.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
   themeColor: "#0A0A0A",
   appleWebApp: {
     capable: true,

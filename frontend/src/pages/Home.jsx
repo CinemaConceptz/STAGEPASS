@@ -61,7 +61,7 @@ export default function Home() {
             data-testid="download-zip-btn"
           >
             <Download className="mr-2" size={22} />
-            {downloading ? 'Downloading...' : 'Download stagepass_production.zip'}
+            {downloading ? 'Downloading...' : 'Download stagepass_final.zip'}
           </Button>
         </div>
       </section>
