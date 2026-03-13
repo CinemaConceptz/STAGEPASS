@@ -9,6 +9,7 @@ interface PlayerProps {
   contentId?: string;
   driveFileId?: string | null;
   showListenerCount?: boolean;
+  listenerCount?: number;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export default function Player({
   contentId,
   driveFileId,
   showListenerCount = false,
+  listenerCount = 0,
   className = "",
 }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
