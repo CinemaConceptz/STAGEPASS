@@ -17,6 +17,8 @@ function mapContent(d: FirebaseFirestore.DocumentData, id: string) {
     creatorSlug: d.creatorSlug || "user",
     playbackUrl: d.playbackUrl || null,
     driveFileId: d.driveFileId || null,
+    drivePreviewUrl: d.drivePreviewUrl || null,
+    mood: d.mood || "",
     viewCount: d.viewCount || 0,
     createdAt: d.createdAt || new Date().toISOString(),
   };

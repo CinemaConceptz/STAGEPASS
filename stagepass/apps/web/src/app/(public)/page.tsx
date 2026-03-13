@@ -37,12 +37,12 @@ export default function HomePage() {
       {heroContent ? (
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a0d2e] via-stage-panel to-stage-panel border border-white/5" data-testid="hero-section">
           <div className="grid grid-cols-1 lg:grid-cols-2">
-            <div className="p-8 lg:p-10 space-y-5 flex flex-col justify-center">
+            <div className="p-5 sm:p-8 lg:p-10 space-y-4 sm:space-y-5 flex flex-col justify-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-stage-mint/30 bg-stage-mint/10 px-3 py-1 text-xs font-bold text-stage-mint w-fit">
                 <span className="h-1.5 w-1.5 rounded-full bg-stage-mint" />
                 LATEST PREMIERE
               </div>
-              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight" data-testid="hero-title">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight" data-testid="hero-title">
                 {heroContent.title}
               </h1>
               <p className="text-sm text-zinc-400">

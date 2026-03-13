@@ -7,8 +7,9 @@ import { useAuth } from "@/context/AuthContext";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import NotificationBell from "./NotificationBell";
-import { Home, LayoutDashboard, Radio, Video, Users, Settings, LogOut, Compass } from "lucide-react";
+import { Home, LayoutDashboard, Radio, Video, Users, LogOut, Compass, Menu, X } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Feed", icon: Home },
@@ -26,6 +27,12 @@ export default function Sidebar() {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     if (auth) {
@@ -39,8 +46,8 @@ export default function Sidebar() {
     return pathname.startsWith(href);
   };
 
-  return (
-    <aside className="fixed top-0 left-0 h-screen w-56 bg-stage-sidebar border-r border-white/5 flex flex-col z-40" data-testid="sidebar">
+  const navContent = (
+    <>
       {/* Logo */}
       <Link href="/" className="flex items-center gap-3 px-5 py-5" data-testid="sidebar-logo">
         <div className="h-8 w-8 rounded-full overflow-hidden shrink-0">
@@ -132,6 +139,43 @@ export default function Sidebar() {
           </>
         )}
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-stage-sidebar border-b border-white/5 z-50 flex items-center px-4 gap-3" data-testid="mobile-topbar">
+        <button onClick={() => setOpen(!open)} className="text-white p-1" data-testid="mobile-menu-btn">
+          {open ? <X size={24} /> : <Menu size={24} />}
+        </button>
+        <Link href="/" className="flex items-center gap-2">
+          <div className="h-7 w-7 rounded-full overflow-hidden shrink-0">
+            <Image src="/logo.jpg" alt="StagePass" width={28} height={28} className="object-cover" />
+          </div>
+          <span className="text-sm font-bold tracking-wider text-white">STAGEPASS</span>
+        </Link>
+        {user && (
+          <div className="ml-auto">
+            <NotificationBell />
+          </div>
+        )}
+      </div>
+
+      {/* Desktop sidebar — always visible on md+ */}
+      <aside className="hidden md:flex fixed top-0 left-0 h-screen w-56 bg-stage-sidebar border-r border-white/5 flex-col z-40" data-testid="sidebar">
+        {navContent}
+      </aside>
+
+      {/* Mobile sidebar — slides in */}
+      {open && (
+        <>
+          <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setOpen(false)} />
+          <aside className="md:hidden fixed top-14 left-0 bottom-0 w-64 bg-stage-sidebar border-r border-white/5 flex flex-col z-50 overflow-y-auto" data-testid="sidebar-mobile">
+            {navContent}
+          </aside>
+        </>
+      )}
+    </>
   );
 }

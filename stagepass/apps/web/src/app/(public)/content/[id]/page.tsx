@@ -42,7 +42,7 @@ export default function ContentPage({ params }: { params: { id: string } }) {
   if (!content) return <div className="text-center py-24"><h1 className="text-2xl font-bold">Content not found.</h1></div>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
       {/* Player + Info */}
       <div className="lg:col-span-2 space-y-6">
         <Player

@@ -182,13 +182,13 @@ export default function RadioPage() {
   const regularStations = stations.filter(s => s.id !== featuredStation?.id);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 py-8">
+    <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12 py-4 sm:py-8">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-5xl md:text-7xl font-black tracking-tighter" data-testid="radio-heading">
+      <div className="text-center space-y-3 sm:space-y-4">
+        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black tracking-tighter" data-testid="radio-heading">
           STAGEPASS <span className="text-stage-indigo">RADIO</span>
         </h1>
-        <p className="text-lg text-stage-mutetext max-w-lg mx-auto">
+        <p className="text-sm sm:text-lg text-stage-mutetext max-w-lg mx-auto">
           Global Creator Broadcast Network. Tune in live or let Auto-DJ keep the music flowing.
         </p>
         {!user ? (
@@ -198,14 +198,14 @@ export default function RadioPage() {
             </Button>
           </Link>
         ) : (
-          <div className="flex items-center justify-center gap-3 mt-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-4">
             <Link href="/studio/radio">
-              <Button variant="primary" size="lg" className="rounded-full px-8" data-testid="radio-create-btn">
+              <Button variant="primary" size="lg" className="rounded-full px-6 sm:px-8 w-full sm:w-auto" data-testid="radio-create-btn">
                 <Radio className="mr-2 h-5 w-5" /> Launch Station
               </Button>
             </Link>
             <Link href="/studio/radio/schedule">
-              <Button variant="secondary" size="lg" className="rounded-full px-8" data-testid="radio-schedule-btn">
+              <Button variant="secondary" size="lg" className="rounded-full px-6 sm:px-8 w-full sm:w-auto" data-testid="radio-schedule-btn">
                 <Calendar className="mr-2 h-5 w-5" /> Manage Schedule
               </Button>
             </Link>

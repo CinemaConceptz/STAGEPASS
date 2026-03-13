@@ -27,6 +27,8 @@ export interface ContentItem {
   creatorSlug?: string;
   playbackUrl?: string;
   driveFileId?: string;
+  drivePreviewUrl?: string;
+  mood?: string;
   viewCount?: number;
   createdAt: string;
 }

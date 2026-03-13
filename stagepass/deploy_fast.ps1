@@ -210,13 +210,21 @@ $WebUrl = (gcloud run services describe stagepass-web --region $REGION --format 
 Write-Host ""
 Write-Host "[6] Granting service account permissions..." -ForegroundColor Yellow
 $DefaultSa = "$PROJECT_ID@appspot.gserviceaccount.com"
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/storage.admin" 2>$null
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/transcoder.admin" 2>$null
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/datastore.user" 2>$null
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/livestream.admin" 2>$null
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/pubsub.publisher" 2>$null
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/run.invoker" 2>$null
-gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$DefaultSa" --role="roles/aiplatform.user" 2>$null
+$ComputeSaNum = (gcloud projects describe $PROJECT_ID --format "value(projectNumber)").Trim()
+$ComputeSa = "$ComputeSaNum-compute@developer.gserviceaccount.com"
+Write-Host "  App Engine SA: $DefaultSa" -ForegroundColor DarkGray
+Write-Host "  Compute SA:    $ComputeSa" -ForegroundColor DarkGray
+
+foreach ($sa in @($DefaultSa, $ComputeSa)) {
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/storage.admin" 2>$null
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/transcoder.admin" 2>$null
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/datastore.user" 2>$null
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/livestream.admin" 2>$null
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/pubsub.publisher" 2>$null
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/run.invoker" 2>$null
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/aiplatform.user" 2>$null
+  gcloud projects add-iam-policy-binding $PROJECT_ID --member="serviceAccount:$sa" --role="roles/firebase.admin" 2>$null
+}
 
 # Make processed GCS paths publicly readable (for HLS playback)
 Write-Host ""
@@ -236,8 +244,21 @@ Write-Host "  Web App  : $WebUrl" -ForegroundColor Cyan
 Write-Host "  API      : $ApiUrl" -ForegroundColor Cyan
 Write-Host "  Worker   : $WorkerUrl (private)" -ForegroundColor Cyan
 Write-Host ""
+Write-Host "VERIFYING BACKEND..." -ForegroundColor Yellow
+Write-Host "  Health check: $WebUrl/api/health"
+try {
+  $healthRes = Invoke-RestMethod -Uri "$WebUrl/api/health" -ErrorAction Stop
+  Write-Host "  Status: $($healthRes.status)" -ForegroundColor $(if ($healthRes.status -eq "HEALTHY") { "Green" } else { "Red" })
+  Write-Host "  Admin SDK: $($healthRes.checks.adminSdk)" -ForegroundColor $(if ($healthRes.checks.adminSdk -match "^OK") { "Green" } else { "Red" })
+  Write-Host "  Firestore: $($healthRes.checks.firestore)" -ForegroundColor $(if ($healthRes.checks.firestore -match "^OK") { "Green" } else { "Red" })
+  Write-Host "  Worker URL: $($healthRes.checks.workerUrl)" -ForegroundColor DarkGray
+} catch {
+  Write-Host "  Health check failed: $_" -ForegroundColor Red
+}
+Write-Host ""
 Write-Host "NEXT STEPS:" -ForegroundColor Yellow
 Write-Host "  1. Add $WebUrl to Firebase Auth Authorized Domains"
 Write-Host "  2. Add $WebUrl as OAuth 2.0 Authorized Origin in GCP Console"
-Write-Host "  3. Test: Sign up, connect Drive, upload a video, check radio"
+Write-Host "  3. Visit $WebUrl/api/health to verify backend connectivity"
+Write-Host "  4. Test: Sign up, connect Drive, upload a video, check radio"
 Write-Host ""
