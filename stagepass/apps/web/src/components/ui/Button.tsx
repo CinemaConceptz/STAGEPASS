@@ -1,37 +1,36 @@
-import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import React from "react";
 
-type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "destructive";
-  size?: "sm" | "md" | "lg";
+const variants = {
+  primary: "bg-stage-mint text-black font-bold hover:bg-stage-mint/90 shadow-glowMint",
+  secondary: "border border-white/10 bg-white/5 text-white hover:bg-white/10",
+  destructive: "bg-red-600 text-white font-bold hover:bg-red-700",
 };
 
-export default function Button({ 
-  variant = "secondary", 
-  size = "md", 
-  className, 
-  ...props 
-}: Props) {
-  const base = "inline-flex items-center justify-center rounded-xl font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-stage-mint/50 disabled:opacity-50 disabled:cursor-not-allowed";
-  
-  const variants = {
-    primary: "bg-stage-indigo text-white shadow-glowIndigo hover:bg-stage-indigo/90 border border-transparent",
-    secondary: "bg-stage-panel text-white border border-white/10 hover:border-white/20 hover:bg-stage-panel2",
-    ghost: "bg-transparent text-stage-mutetext hover:text-white hover:bg-white/5",
-    destructive: "bg-red-900/50 text-red-200 border border-red-500/20 hover:bg-red-900/70"
-  };
+const sizes = {
+  sm: "px-3 py-1.5 text-xs rounded-lg",
+  md: "px-5 py-2.5 text-sm rounded-xl",
+  lg: "px-6 py-3 text-sm rounded-xl",
+};
 
-  const sizes = {
-    sm: "px-3 py-1.5 text-xs",
-    md: "px-4 py-2 text-sm",
-    lg: "px-6 py-3 text-base"
-  };
-
+export default function Button({
+  variant = "primary",
+  size = "md",
+  className,
+  ...props
+}: {
+  variant?: keyof typeof variants;
+  size?: keyof typeof sizes;
+  className?: string;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button 
-      className={twMerge(base, variants[variant], sizes[size], className)} 
-      {...props} 
+    <button
+      className={twMerge(
+        "inline-flex items-center justify-center transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed",
+        variants[variant],
+        sizes[size],
+        className
+      )}
+      {...props}
     />
   );
 }

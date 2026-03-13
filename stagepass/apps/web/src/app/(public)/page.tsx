@@ -18,9 +18,7 @@ export default function HomePage() {
     async function load() {
       const data = await getRecentContent();
       setFeed(data);
-      // Hero = most recent video, rotates every 5 days naturally as new content is uploaded
       if (data.length > 0) {
-        // Pick the most recent item with a thumbnail as hero
         const hero = data.find(c => c.thumbnail || c.thumbnailUrl) || data[0];
         setHeroContent(hero);
       }
@@ -30,103 +28,92 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="space-y-12">
-      {/* Hero - Most Recent Content */}
+    <div className="space-y-10">
+      {/* Hero */}
       {heroContent ? (
-        <div className="relative overflow-hidden rounded-3xl bg-stage-panel border border-white/10" data-testid="hero-section">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a0d2e] via-stage-panel to-stage-panel border border-white/5" data-testid="hero-section">
           <div className="grid grid-cols-1 lg:grid-cols-2">
-            <div className="p-8 md:p-12 space-y-6 flex flex-col justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-stage-mint/30 bg-stage-mint/10 px-3 py-1 text-xs font-bold text-stage-mint shadow-glowMint w-fit">
-                <span className="h-2 w-2 rounded-full bg-stage-mint" />
+            <div className="p-8 lg:p-10 space-y-5 flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-stage-mint/30 bg-stage-mint/10 px-3 py-1 text-xs font-bold text-stage-mint w-fit">
+                <span className="h-1.5 w-1.5 rounded-full bg-stage-mint" />
                 LATEST PREMIERE
               </div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight" data-testid="hero-title">
+              <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight" data-testid="hero-title">
                 {heroContent.title}
               </h1>
-              <p className="text-base text-stage-mutetext">
+              <p className="text-sm text-zinc-400">
                 by <span className="text-white font-semibold">{heroContent.creatorName}</span>
                 {heroContent.viewCount ? ` — ${heroContent.viewCount.toLocaleString()} views` : ""}
               </p>
-              <div className="flex gap-4 pt-2">
-                <Link href={`/content/${heroContent.id}`}>
-                  <Button variant="primary" size="lg" className="rounded-full px-8" data-testid="hero-watch-btn">
-                    <Play size={18} className="mr-2" fill="currentColor" /> Watch Now
-                  </Button>
-                </Link>
-              </div>
+              <Link href={`/content/${heroContent.id}`}>
+                <Button variant="primary" size="lg" className="rounded-xl px-8" data-testid="hero-watch-btn">
+                  <Play size={16} className="mr-2" fill="currentColor" /> Watch Now
+                </Button>
+              </Link>
             </div>
-            <div className="relative h-64 lg:h-auto">
+            <div className="relative h-56 lg:h-auto">
               {(heroContent.thumbnail || heroContent.thumbnailUrl) ? (
-                <img
-                  src={heroContent.thumbnail || heroContent.thumbnailUrl}
-                  alt={heroContent.title}
-                  className="w-full h-full object-cover"
-                />
+                <img src={heroContent.thumbnail || heroContent.thumbnailUrl} alt={heroContent.title} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-stage-indigo/30 to-stage-mint/10 flex items-center justify-center">
-                  <Play size={64} className="text-white/20" />
+                <div className="w-full h-full bg-gradient-to-br from-stage-indigo/20 to-transparent flex items-center justify-center">
+                  <Play size={48} className="text-white/10" />
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-r from-stage-panel via-stage-panel/50 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-r from-stage-panel via-stage-panel/60 to-transparent pointer-events-none" />
             </div>
           </div>
         </div>
       ) : loading ? (
-        <div className="relative overflow-hidden rounded-3xl bg-stage-panel border border-white/10 p-8 md:p-12">
+        <div className="rounded-2xl bg-stage-panel border border-white/5 p-10">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 w-32 bg-white/10 rounded" />
-            <div className="h-12 w-3/4 bg-white/10 rounded" />
-            <div className="h-4 w-1/2 bg-white/10 rounded" />
+            <div className="h-3 w-28 bg-white/5 rounded" />
+            <div className="h-10 w-3/4 bg-white/5 rounded" />
+            <div className="h-4 w-1/3 bg-white/5 rounded" />
           </div>
         </div>
       ) : (
-        <div className="relative overflow-hidden rounded-3xl bg-stage-panel border border-white/10 p-8 md:p-12" data-testid="hero-section">
-          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-stage-indigo/20 to-transparent pointer-events-none" />
-          <div className="relative z-10 max-w-2xl space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-stage-mint/30 bg-stage-mint/10 px-3 py-1 text-xs font-bold text-stage-mint shadow-glowMint animate-pulse">
-              <span className="h-2 w-2 rounded-full bg-stage-mint" />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a0d2e] via-stage-panel to-stage-panel border border-white/5 p-8 lg:p-10" data-testid="hero-section">
+          <div className="max-w-xl space-y-5">
+            <div className="inline-flex items-center gap-2 rounded-full border border-stage-mint/30 bg-stage-mint/10 px-3 py-1 text-xs font-bold text-stage-mint">
+              <span className="h-1.5 w-1.5 rounded-full bg-stage-mint" />
               WELCOME
             </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
+            <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
               STAGEPASS
             </h1>
-            <p className="text-lg text-stage-mutetext max-w-lg">
+            <p className="text-sm text-zinc-400 max-w-md">
               The creator-first platform. Upload, stream, and premiere your content. No algorithms, no suppression.
             </p>
-            <div className="flex gap-4 pt-2">
+            <div className="flex gap-3 pt-1">
               <Link href="/signup">
-                <Button variant="primary" size="lg" className="rounded-full px-8">
-                  Get Started
-                </Button>
+                <Button variant="primary" size="lg" className="rounded-xl px-8">Get Started</Button>
               </Link>
               <Link href="/explore">
-                <Button variant="secondary" size="lg" className="rounded-full px-8">
-                  Explore
-                </Button>
+                <Button variant="secondary" size="lg" className="rounded-xl px-8">Explore</Button>
               </Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* Feed Section */}
-      <div className="space-y-6" data-testid="feed-section">
+      {/* Feed */}
+      <div className="space-y-5" data-testid="feed-section">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">Your Feed</h2>
+          <h2 className="text-lg font-bold tracking-tight">Your Feed</h2>
           <FeedSort value={sort} onChange={setSort} />
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-stage-mutetext">
-            <div className="h-8 w-8 mx-auto border-2 border-white/20 border-t-stage-mint rounded-full animate-spin mb-3" />
-            Loading Stage...
+          <div className="text-center py-12 text-zinc-500">
+            <div className="h-7 w-7 mx-auto border-2 border-white/10 border-t-stage-mint rounded-full animate-spin mb-3" />
+            Loading...
           </div>
         ) : feed.length === 0 ? (
-          <div className="text-center py-12 text-stage-mutetext border border-dashed border-white/10 rounded-xl" data-testid="feed-empty">
+          <div className="text-center py-12 text-zinc-500 border border-dashed border-white/5 rounded-xl" data-testid="feed-empty">
             No premieres yet. Be the first to upload in the Studio!
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="feed-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="feed-grid">
             {feed.filter(item => item.id !== heroContent?.id).map((item) => (
               <ContentCard
                 key={item.id}

@@ -12,8 +12,8 @@ export default function Card({
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={twMerge(
-      "rounded-xl2 border border-white/10 bg-stage-panel p-5 relative overflow-hidden",
-      hoverEffect && "transition-all duration-300 hover:border-stage-indigo/30 hover:shadow-glowIndigo hover:-translate-y-1",
+      "rounded-2xl border border-white/5 bg-stage-panel p-5 relative overflow-hidden",
+      hoverEffect && "transition-all duration-200 hover:border-stage-indigo/30 hover:bg-white/[0.02]",
       className
     )} {...props}>
       {children}

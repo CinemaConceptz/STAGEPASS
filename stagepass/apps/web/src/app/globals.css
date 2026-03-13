@@ -3,18 +3,27 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
-}
-
-html, body {
-  height: 100%;
+  --stage-bg: #0A0A0A;
+  --stage-sidebar: #0F0F0F;
+  --stage-panel: #121212;
+  --stage-text: #F5F5F5;
+  --stage-mutetext: #71717A;
+  --stage-mint: #00FFC6;
+  --stage-indigo: #D946EF;
+  --stage-border: rgba(255, 255, 255, 0.06);
 }
 
 body {
-  background: #121212;
-  color: #ffffff;
+  background-color: var(--stage-bg);
+  color: var(--stage-text);
 }
 
 ::selection {
-  background: rgba(0,255,198,0.25); /* Neon Mint selection */
+  background: rgba(0,255,198,0.25);
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--stage-bg); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }

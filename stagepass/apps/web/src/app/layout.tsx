@@ -1,6 +1,5 @@
 import "./globals.css";
-import Nav from "@/components/stagepass/Nav";
-import Footer from "@/components/stagepass/Footer";
+import Sidebar from "@/components/stagepass/Sidebar";
 import ButlerDock from "@/components/butler/ButlerDock";
 import { AuthProvider } from "@/context/AuthContext";
 
@@ -8,7 +7,7 @@ export const metadata = {
   title: "STAGEPASS",
   description: "You're not posting. You're premiering.",
   manifest: "/manifest.json",
-  themeColor: "#D946EF",
+  themeColor: "#0A0A0A",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent" as const,
@@ -30,16 +29,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="STAGEPASS" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
-      <body className="min-h-screen bg-stage-bg text-stage-text font-sans antialiased flex flex-col">
+      <body className="min-h-screen bg-stage-bg text-stage-text font-sans antialiased">
         <AuthProvider>
-          <Nav />
-          <div className="flex-1">
-            {children}
-          </div>
-          <Footer />
+          <Sidebar />
+          <main className="ml-56 min-h-screen">
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+              {children}
+            </div>
+          </main>
           <ButlerDock />
         </AuthProvider>
       </body>
