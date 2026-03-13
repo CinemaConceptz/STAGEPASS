@@ -18,12 +18,16 @@ export default function CreatorPage() {
   useEffect(() => {
     if (!params.slug) return;
     (async () => {
-      const c = await getCreatorBySlug(params.slug);
+      const [creatorRes, feedRes] = await Promise.all([
+        fetch(`/api/creators?slug=${encodeURIComponent(params.slug)}`).then(r => r.json()),
+        fetch(`/api/content/feed?limit=20`).then(r => r.json()), // initial fetch, filter after creator load
+      ]);
+      const c = creatorRes.creator || null;
       setCreator(c);
       setFollowerCount(c?.followerCount || 0);
       if (c) {
-        const items = await getContentByCreator(c.uid);
-        setContent(items);
+        const contentRes = await fetch(`/api/content/feed?creatorId=${c.uid}&limit=20`).then(r => r.json());
+        setContent(contentRes.items || []);
       }
       setLoading(false);
     })();

@@ -12,8 +12,10 @@ export default function ExplorePage() {
   const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
-    // In real app, filter query by category
-    getRecentContent().then(setFeed);
+    fetch("/api/content/feed?limit=50")
+      .then(r => r.json())
+      .then(d => setFeed(d.items || []))
+      .catch(() => {});
   }, [activeCategory]);
 
   return (

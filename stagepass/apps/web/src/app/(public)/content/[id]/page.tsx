@@ -14,11 +14,14 @@ export default function ContentPage({ params }: { params: { id: string } }) {
   const [viewCount, setViewCount] = useState(0);
 
   useEffect(() => {
-    getContentById(params.id).then((data) => {
-      setContent(data);
-      setViewCount(data?.viewCount || 0);
-      setLoading(false);
-    });
+    fetch(`/api/content/${params.id}`)
+      .then(r => r.json())
+      .then(data => {
+        setContent(data.item || null);
+        setViewCount(data.item?.viewCount || 0);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [params.id]);
 
   // Track view + listener count

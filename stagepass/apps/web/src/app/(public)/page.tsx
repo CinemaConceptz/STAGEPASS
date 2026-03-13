@@ -16,12 +16,16 @@ export default function HomePage() {
 
   useEffect(() => {
     async function load() {
-      const data = await getRecentContent();
-      setFeed(data);
-      if (data.length > 0) {
-        const hero = data.find(c => c.thumbnail || c.thumbnailUrl) || data[0];
-        setHeroContent(hero);
-      }
+      try {
+        const res = await fetch("/api/content/feed?limit=20");
+        const data = await res.json();
+        const items = data.items || [];
+        setFeed(items);
+        if (items.length > 0) {
+          const hero = items.find((c: any) => c.thumbnail || c.thumbnailUrl) || items[0];
+          setHeroContent(hero);
+        }
+      } catch { /* silent */ }
       setLoading(false);
     }
     load();
