@@ -84,7 +84,7 @@ export async function getRecentContent(): Promise<ContentItem[]> {
     const snapshot = await withTimeout(getDocs(q), 8000, { docs: [] } as any);
     return snapshot.docs
       .map((d: any) => mapContent(d.data(), d.id))
-      .filter((c: ContentItem) => !c.status || c.status === "READY");
+      .filter((c: ContentItem) => !c.status || c.status === "READY" || c.status === "QUEUED" || c.status === "PROCESSING");
   } catch (e) { return []; }
 }
 

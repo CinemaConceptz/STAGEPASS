@@ -4,22 +4,28 @@ import { useState } from "react";
 import useDrivePicker from "react-google-drive-picker";
 import Button from "@/components/ui/Button";
 import { connectGoogleDrive } from "@/lib/firebase/drive";
-import { UploadCloud, Music, Video } from "lucide-react";
+import { UploadCloud, Music, Video, CheckSquare, Square } from "lucide-react";
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  token: string;
+}
 
 interface DrivePickerProps {
-  onSelect: (file: {
-    id: string;
-    name: string;
-    mimeType: string;
-    token: string;
-  }) => void;
+  onSelect: (file: DriveFile) => void;
+  onSelectMultiple?: (files: DriveFile[]) => void;
   mode?: "video" | "audio" | "folder";
+  multiselect?: boolean;
   label?: string;
 }
 
 export default function DrivePicker({
   onSelect,
+  onSelectMultiple,
   mode = "video",
+  multiselect = false,
   label,
 }: DrivePickerProps) {
   const [openPicker] = useDrivePicker();
@@ -43,12 +49,7 @@ export default function DrivePicker({
         ? "DOCS_VIDEOS"
         : mode === "folder"
         ? "FOLDERS"
-        : "DOCS"; // DOCS allows MIME type filtering
-
-    const mimeTypes =
-      mode === "audio"
-        ? "audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/flac,audio/aac,audio/x-m4a,audio/*"
-        : undefined;
+        : "DOCS";
 
     openPicker({
       clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
@@ -58,18 +59,21 @@ export default function DrivePicker({
       showUploadView: false,
       showUploadFolders: mode === "folder",
       supportDrives: true,
-      multiselect: false,
-      // Filter to audio MIME types when in audio mode
-      ...(mimeTypes ? { customViews: undefined } : {}),
+      multiselect: multiselect || mode === "audio",
       callbackFunction: (data) => {
-        if (data.action === "picked") {
-          const file = data.docs[0];
-          onSelect({
-            id: file.id,
-            name: file.name,
-            mimeType: file.mimeType,
+        if (data.action === "picked" && data.docs.length > 0) {
+          const files: DriveFile[] = data.docs.map((doc: any) => ({
+            id: doc.id,
+            name: doc.name,
+            mimeType: doc.mimeType,
             token: token!,
-          });
+          }));
+
+          if ((multiselect || mode === "audio") && onSelectMultiple) {
+            onSelectMultiple(files);
+          } else {
+            onSelect(files[0]);
+          }
         }
       },
     });
@@ -78,7 +82,7 @@ export default function DrivePicker({
   const buttonLabel =
     label ||
     (mode === "audio"
-      ? "Select Audio File"
+      ? "Select Audio Files"
       : mode === "folder"
       ? "Select Folder"
       : "Select Video File");
@@ -94,7 +98,7 @@ export default function DrivePicker({
           Connect your Google Drive to import your content.
         </p>
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-        <Button variant="primary" onClick={handleConnect}>
+        <Button variant="primary" onClick={handleConnect} data-testid="drive-connect-btn">
           Connect Google Drive
         </Button>
       </div>
@@ -107,12 +111,12 @@ export default function DrivePicker({
       <h3 className="text-lg font-bold mb-2">Drive Connected</h3>
       <p className="text-sm text-stage-mutetext mb-4">
         {mode === "audio"
-          ? "Ready to select your MP3/audio files."
+          ? "Select multiple audio files (MP3, WAV, FLAC, etc)."
           : mode === "folder"
           ? "Ready to select a folder."
           : "Ready to select your video content."}
       </p>
-      <Button variant="secondary" onClick={handleOpen}>
+      <Button variant="secondary" onClick={handleOpen} data-testid="drive-open-btn">
         {buttonLabel}
       </Button>
     </div>

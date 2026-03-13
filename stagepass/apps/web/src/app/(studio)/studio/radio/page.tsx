@@ -3,30 +3,40 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import DrivePicker from "@/components/studio/DrivePicker";
-import { Radio, Music, CheckCircle, ImageIcon, Upload } from "lucide-react";
+import DrivePicker, { DriveFile } from "@/components/studio/DrivePicker";
+import ImageUploader from "@/components/studio/ImageUploader";
+import { Radio, Music, CheckCircle, X, CheckSquare, Square } from "lucide-react";
 import { auth } from "@/lib/firebase/client";
 
 export default function RadioStudio() {
   const [stationName, setStationName] = useState("");
   const [genre, setGenre] = useState("House");
   const [desc, setDesc] = useState("");
-  const [artworkUrl, setArtworkUrl] = useState("");
-  const [audioFile, setAudioFile] = useState<{
-    id: string;
-    name: string;
-    token: string;
-    mimeType: string;
-  } | null>(null);
+  const [artworkData, setArtworkData] = useState("");
+  const [audioFiles, setAudioFiles] = useState<DriveFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleDriveSelect = (file: any) => {
-    setAudioFile(file);
+  const handleDriveSelectMultiple = (files: DriveFile[]) => {
+    setAudioFiles((prev) => {
+      const existingIds = new Set(prev.map((f) => f.id));
+      const newFiles = files.filter((f) => !existingIds.has(f.id));
+      return [...prev, ...newFiles];
+    });
   };
 
+  const handleDriveSelectSingle = (file: DriveFile) => {
+    handleDriveSelectMultiple([file]);
+  };
+
+  const toggleFile = (id: string) => {
+    setAudioFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const removeAllFiles = () => setAudioFiles([]);
+
   const handleSave = async () => {
-    if (!auth?.currentUser || !audioFile) return;
+    if (!auth?.currentUser || audioFiles.length === 0) return;
     setLoading(true);
 
     try {
@@ -39,10 +49,13 @@ export default function RadioStudio() {
           stationName,
           genre,
           description: desc,
-          artworkUrl,
-          driveFileId: audioFile.id,
-          driveFileName: audioFile.name,
-          token: audioFile.token,
+          artworkUrl: artworkData,
+          tracks: audioFiles.map((f) => ({
+            driveFileId: f.id,
+            driveFileName: f.name,
+            mimeType: f.mimeType,
+          })),
+          token: audioFiles[0].token,
         }),
       });
       const data = await res.json();
@@ -75,6 +88,7 @@ export default function RadioStudio() {
         </div>
       )}
 
+      {/* Station Details */}
       <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-6">
         <h3 className="font-bold text-lg border-b border-white/10 pb-2">Station Details</h3>
         <div className="space-y-4">
@@ -119,60 +133,76 @@ export default function RadioStudio() {
         </div>
       </div>
 
-      {/* Artwork */}
+      {/* Artwork - File Upload */}
       <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-4">
-        <h3 className="font-bold text-lg border-b border-white/10 pb-2 flex items-center gap-2">
-          <ImageIcon size={18} /> Station Artwork
-        </h3>
-        <div className="flex items-start gap-4">
-          <div className="h-24 w-24 bg-black/30 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-white/10">
-            {artworkUrl ? (
-              <img src={artworkUrl} alt="Artwork" className="w-full h-full object-cover" />
-            ) : (
-              <ImageIcon size={24} className="text-stage-mutetext/40" />
-            )}
-          </div>
-          <div className="flex-1 space-y-2">
-            <Input
-              value={artworkUrl}
-              onChange={(e) => setArtworkUrl(e.target.value)}
-              placeholder="Paste artwork image URL"
-              data-testid="radio-artwork-url"
-            />
-            <p className="text-xs text-stage-mutetext">Square image recommended (500x500 or larger).</p>
-          </div>
-        </div>
+        <h3 className="font-bold text-lg border-b border-white/10 pb-2">Station Artwork</h3>
+        <ImageUploader
+          value={artworkData}
+          onChange={setArtworkData}
+          label="Square image recommended (500x500 or larger). PNG, JPG, WebP. Max 5MB."
+        />
       </div>
 
-      {/* Audio Source */}
+      {/* Audio Source - Multi-select */}
       <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-6">
         <h3 className="font-bold text-lg border-b border-white/10 pb-2 flex items-center gap-2">
-          <Music size={20} /> Audio Source
+          <Music size={20} /> Audio Tracks
         </h3>
         <p className="text-sm text-stage-mutetext">
-          Select a folder or audio file from your Google Drive, or upload files directly.
+          Select multiple audio files from your Google Drive. Use checkboxes to pick tracks for your station playlist.
         </p>
 
-        {!audioFile ? (
-          <DrivePicker onSelect={handleDriveSelect} mode="audio" />
-        ) : (
-          <div className="flex items-center justify-between p-4 bg-black/30 rounded-xl">
-            <div className="flex items-center gap-3">
-              <Music className="text-stage-mint" size={20} />
-              <div>
-                <p className="font-bold">{audioFile.name}</p>
-                <p className="text-xs text-stage-mutetext">{audioFile.mimeType}</p>
-              </div>
+        {/* Selected files list */}
+        {audioFiles.length > 0 && (
+          <div className="space-y-2" data-testid="radio-selected-tracks">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-bold text-stage-mint">
+                {audioFiles.length} track{audioFiles.length !== 1 ? "s" : ""} selected
+              </span>
+              <button
+                onClick={removeAllFiles}
+                className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                data-testid="radio-clear-all"
+              >
+                Clear All
+              </button>
             </div>
-            <button
-              onClick={() => setAudioFile(null)}
-              className="text-xs text-red-400 hover:text-red-300 transition-colors"
-              data-testid="radio-change-audio"
-            >
-              Change
-            </button>
+            {audioFiles.map((file, idx) => (
+              <div
+                key={file.id}
+                className="flex items-center gap-3 p-3 bg-black/30 rounded-xl group"
+                data-testid={`radio-track-${idx}`}
+              >
+                <button
+                  onClick={() => toggleFile(file.id)}
+                  className="shrink-0"
+                  data-testid={`radio-track-checkbox-${idx}`}
+                >
+                  <CheckSquare size={18} className="text-stage-mint" />
+                </button>
+                <Music size={16} className="text-stage-mint shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{file.name}</p>
+                  <p className="text-xs text-stage-mutetext">{file.mimeType}</p>
+                </div>
+                <button
+                  onClick={() => toggleFile(file.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-stage-mutetext hover:text-red-400"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
+
+        <DrivePicker
+          onSelect={handleDriveSelectSingle}
+          onSelectMultiple={handleDriveSelectMultiple}
+          mode="audio"
+          multiselect
+          label={audioFiles.length > 0 ? "Add More Tracks" : "Select Audio Files"}
+        />
       </div>
 
       <div className="flex justify-end">
@@ -180,10 +210,10 @@ export default function RadioStudio() {
           variant="primary"
           size="lg"
           onClick={handleSave}
-          disabled={loading || !audioFile || !stationName}
+          disabled={loading || audioFiles.length === 0 || !stationName}
           data-testid="radio-launch-btn"
         >
-          {loading ? "Saving Station..." : "Launch Station"}
+          {loading ? "Saving Station..." : `Launch Station (${audioFiles.length} tracks)`}
         </Button>
       </div>
     </div>

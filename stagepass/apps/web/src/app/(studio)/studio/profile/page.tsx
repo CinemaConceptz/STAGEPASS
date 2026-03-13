@@ -8,6 +8,7 @@ import { auth } from "@/lib/firebase/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { User, Camera, Save, Link as LinkIcon, ExternalLink, HardDrive, LogOut, CheckCircle } from "lucide-react";
+import ImageUploader from "@/components/studio/ImageUploader";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -135,25 +136,11 @@ export default function ProfilePage() {
       {/* Avatar */}
       <div className="bg-stage-panel border border-white/10 rounded-2xl p-6 space-y-4">
         <h3 className="font-bold text-lg border-b border-white/10 pb-2">Profile Photo</h3>
-        <div className="flex items-center gap-6">
-          <div className="relative h-24 w-24 rounded-full bg-black/30 border-2 border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <User size={36} className="text-stage-mutetext" />
-            )}
-          </div>
-          <div className="flex-1 space-y-2">
-            <label className="block text-sm font-medium text-stage-mutetext">Photo URL</label>
-            <Input
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://example.com/your-photo.jpg"
-              data-testid="profile-avatar-input"
-            />
-            <p className="text-xs text-stage-mutetext">Paste a direct link to your profile image.</p>
-          </div>
-        </div>
+        <ImageUploader
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+          label="PNG, JPG, or WebP. Max 5MB. Square recommended."
+        />
       </div>
 
       {/* Basic Info */}
