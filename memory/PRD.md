@@ -77,12 +77,25 @@ apps/
 - Drive → GCS transfer, Transcoder API (720p + 360p HLS)
 
 ## Key API Endpoints
-- `POST /api/radio/schedule` — Save schedule + Auto-DJ + crossfade + mood settings
+- `POST /api/auth/signup` — Create user/creator profile (Admin SDK)
+- `GET/PUT /api/profile` — Read/update user profile (Admin SDK)
+- `GET /api/content/feed` — Content feed (Admin SDK)
+- `GET /api/content/[id]` — Single content with driveFileId
+- `GET /api/content/[id]/signed-url` — Signed GCS URL for playback
+- `GET/POST /api/comments/[contentId]` — Comments on recorded videos
+- `GET/POST /api/live/chat/[channelId]` — Live chat (server-side, replaces client SDK)
+- `POST /api/radio/station` — Create/update radio station with driveUrl per track
+- `GET /api/radio/station/now?stationId=xxx` — Auto-DJ now playing (mood filter, LIVE_DJ mode)
+- `POST /api/radio/generate-stream` — HLS stream generation (worker → PubSub → Firestore queue)
+- `GET/POST /api/radio/dj-handoff` — Live DJ take over / release from Auto-DJ
 - `GET /api/radio/schedule?stationId=xxx` — Fetch schedule with crossfade/mood
-- `GET /api/radio/station/now?stationId=xxx` — Auto-DJ now playing (with mood filter)
-- `GET /api/radio/stations` — List all stations (Admin SDK)
+- `POST /api/radio/schedule` — Save schedule + Auto-DJ + crossfade + mood settings
+- `GET /api/radio/stations` — List all stations
 - `GET/POST/DELETE /api/follow/[creatorId]` — Follow system
 - `GET/POST /api/notifications` — Notification system
+- `POST /api/butler/resolve` — Encore AI (3-tier: API key → Vertex AI ADC → rule-based fallback)
+- `GET/PUT /api/admin/stats` — Admin dashboard stats + content status update
+- `POST /api/admin/claim` — First-user admin claim
 - `POST /api/live/session` — Provision live channel
 - `POST /api/content/import-drive` — Import from Google Drive
 
