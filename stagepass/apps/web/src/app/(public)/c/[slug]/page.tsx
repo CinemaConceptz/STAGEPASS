@@ -44,7 +44,7 @@ export default function CreatorPage() {
   if (!creator) {
     return (
       <div className="text-center py-24">
-        <h1 className="text-2xl font-bold">Creator not found</h1>
+        <h1 className="text-2xl font-bold">Content Creator Not Found</h1>
         <p className="text-stage-mutetext mt-2">The channel &ldquo;{params.slug}&rdquo; does not exist.</p>
       </div>
     );

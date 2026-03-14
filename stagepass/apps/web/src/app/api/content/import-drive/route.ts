@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { fileId, fileName, title, mood, token, userId, creatorName, creatorSlug } = body;
+    const { fileId, fileName, title, mood, token, userId, creatorName, creatorSlug, customThumbnailUrl } = body;
 
     if (!token || !fileId || !userId) {
       return NextResponse.json(
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       bucket,
       processedPath,
       // Thumbnail: use Drive thumbnail immediately, GCS after processing
-      thumbnailUrl: driveThumbnail || null,
+      thumbnailUrl: customThumbnailUrl || driveThumbnail || null,
       // Playback: HLS after processing, Drive preview as immediate fallback
       playbackUrl: hlsUrl,
       drivePreviewUrl,

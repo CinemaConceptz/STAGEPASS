@@ -102,11 +102,17 @@ export default function Player({
     if (driveFileId) {
       return (
         <div className={`relative aspect-video bg-black rounded-xl overflow-hidden ${className}`} data-testid="player-drive-embed">
+          {/* Overlay blocks right-click, download button, and pop-out links */}
+          <div
+            className="absolute inset-0 z-10"
+            style={{ pointerEvents: "none" }}
+            onContextMenu={e => e.preventDefault()}
+          />
           <iframe
             src={`https://drive.google.com/file/d/${driveFileId}/preview`}
             className="w-full h-full border-0"
             allow="autoplay; encrypted-media"
-            allowFullScreen
+            sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"
           />
         </div>
       );

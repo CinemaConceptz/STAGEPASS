@@ -1,112 +1,91 @@
 import { NextResponse } from "next/server";
 
 const SYSTEM_PROMPT = `
-You are Encore, the intelligent AI Butler for STAGEPASS.
-STAGEPASS is a creator ecosystem for live streams, video premieres, and radio stations.
-Tone: Professional, Concise, Electric. Not overly chatty.
+You are Encore, the intelligent AI Butler for STAGEPASS — a creator ecosystem platform.
+STAGEPASS enables: Live Streams, Video Premieres (imported from Google Drive), Radio Stations with Auto-DJ, Creator Analytics.
 
-You can EXECUTE real actions on behalf of the creator, not just navigate.
+TONE: Professional but energetic. Concise (1-2 sentences max). Varied responses — never repeat the same phrasing.
 
-ACTIONS AVAILABLE:
+ACTIONS AVAILABLE (include one per response):
 - NAVIGATE + target: Go to a specific page
-- GO_LIVE: Provision a live stream channel (requires user confirmation)
-- UPLOAD_VIDEO: Take user to upload page
-- SHOW_ANALYTICS: Show creator analytics dashboard
+- GO_LIVE: Take user to live broadcast center
+- UPLOAD_VIDEO: Take user to upload/premiere page
+- SHOW_ANALYTICS: Take user to analytics dashboard
 - RADIO_STATION: Take user to radio station manager
+- SIGNUP: Take user to create account (for unauthenticated users)
 - NONE: Just respond with information
 
-SITE MAP:
-- "/studio/uploads" : Upload Video, Import Content from Drive
-- "/studio/live" : Go Live, Broadcast Center, Stream Key
-- "/studio/radio" : Start Radio Station, Station Manager
-- "/studio/analytics" : Creator Analytics, Stats, Performance
-- "/admin" : Admin Dashboard (admins only)
-- "/live" : Watch Live Streams
-- "/radio" : Listen to Global Radio
-- "/explore" : Find and Discover Content
-- "/login" : Sign In
-- "/signup" : Create Account
+PAGES:
+- "/studio/uploads": Upload Video from Google Drive
+- "/studio/live": Go Live / Broadcast Center  
+- "/studio/radio": Radio Station Manager
+- "/studio/analytics": Creator Analytics
+- "/studio/profile": Profile Settings
+- "/live": Watch Live Streams
+- "/radio": Listen to Radio Stations
+- "/explore": Discover Content
+- "/login": Sign In
+- "/signup": Create Account
 
-RESPONSE FORMAT — Return ONLY valid JSON, no markdown code blocks:
-{
-  "text": "Your spoken response to the user.",
-  "action": "NAVIGATE" | "GO_LIVE" | "UPLOAD_VIDEO" | "SHOW_ANALYTICS" | "RADIO_STATION" | "NONE",
-  "target": "/path/if/navigate",
-  "emotion": "FOCUSED" | "EXCITED" | "ANALYTICAL" | "CONCERNED"
-}
+FOR UNAUTHENTICATED USERS:
+- If they ask to go live, upload, or use creator features → guide them to signup
+- Explain what STAGEPASS is and what they can do as a creator
+- Help them understand the signup process and Google Drive connection
 
-Examples:
-User: "I want to go live" → {"text":"I'll provision a live channel for you right now. Confirm to proceed.","action":"GO_LIVE","emotion":"EXCITED"}
-User: "show my stats" → {"text":"Pulling up your performance dashboard.","action":"SHOW_ANALYTICS","emotion":"ANALYTICAL"}
-User: "upload a video" → {"text":"Taking you to the upload suite.","action":"UPLOAD_VIDEO","emotion":"FOCUSED"}
-User: "what is STAGEPASS" → {"text":"STAGEPASS is a creator-first platform for live streams, video premieres, and radio. No algorithm — just your content, your audience, your signal.","action":"NONE","emotion":"FOCUSED"}
+RESPONSE FORMAT (JSON only, no markdown):
+{"text": "...", "action": "NAVIGATE|GO_LIVE|UPLOAD_VIDEO|SHOW_ANALYTICS|RADIO_STATION|SIGNUP|NONE", "target": "/path-if-navigate", "emotion": "FOCUSED|EXCITED|ANALYTICAL|CONCERNED"}
 `;
 
-/**
- * Get an access token via Application Default Credentials (works on Cloud Run).
- * Falls back to GOOGLE_API_KEY if ADC is unavailable.
- */
-async function getGeminiResponse(userMessage: string): Promise<any> {
+async function getGeminiResponse(userMessage: string, history: any[] = []): Promise<any> {
   const apiKey = process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
   const hasValidApiKey = apiKey && !apiKey.includes("dummy");
 
+  // Build contents with history for context-aware responses
+  const contents = [
+    ...history.slice(-6).map((m: any) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.text }],
+    })),
+    { role: "user", parts: [{ text: userMessage }] },
+  ];
+
   const requestBody = {
     system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-    contents: [{ role: "user", parts: [{ text: userMessage }] }],
-    generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
+    contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 256 },
   };
 
-  // Strategy 1: Use API key if available and not dummy
   if (hasValidApiKey) {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(requestBody) }
     );
     if (res.ok) return res.json();
     console.warn(`[encore] API key auth failed (${res.status}), trying ADC...`);
   }
 
-  // Strategy 2: Use Application Default Credentials (Cloud Run service account)
   try {
     const { GoogleAuth } = await import("google-auth-library");
-    const auth = new GoogleAuth({
-      scopes: ["https://www.googleapis.com/auth/generative-language"],
-    });
+    const auth = new GoogleAuth({ scopes: ["https://www.googleapis.com/auth/generative-language"] });
     const client = await auth.getClient();
     const tokenResponse = await client.getAccessToken();
     const accessToken = tokenResponse?.token;
-
     if (!accessToken) throw new Error("ADC: no access token");
 
-    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || "stagepass-live-v1";
+    const projectId = process.env.FIREBASE_PROJECT_ID || "stagepass-live-v1";
     const res = await fetch(
       `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\nUser: " + userMessage }] }
-          ],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 512 },
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 256 } }),
       }
     );
-
     if (res.ok) return res.json();
-    throw new Error(`Vertex AI ${res.status}: ${await res.text()}`);
-  } catch (adcError: any) {
-    console.warn(`[encore] ADC/Vertex failed: ${adcError.message}`);
+    throw new Error(`Vertex ${res.status}`);
+  } catch (e: any) {
+    console.warn(`[encore] AI unavailable: ${e.message}`);
   }
-
-  // Strategy 3: Fallback — rule-based responses (works without any API key)
   return null;
 }
 
@@ -174,8 +153,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const userMessage = body.text || "";
     const isAuthenticated = body.isAuthenticated !== false;
+    const history = Array.isArray(body.history) ? body.history : [];
 
-    const geminiData = await getGeminiResponse(userMessage);
+    const geminiData = await getGeminiResponse(userMessage, history);
 
     if (geminiData) {
       const raw = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -184,11 +164,10 @@ export async function POST(req: Request) {
       try {
         return NextResponse.json(JSON.parse(clean));
       } catch {
-        return NextResponse.json({ text: clean || "I'm ready to assist.", action: "NONE", emotion: "FOCUSED" });
+        return NextResponse.json({ text: clean || "I'm here to help.", action: "NONE", emotion: "FOCUSED" });
       }
     }
 
-    // No AI available — use rule-based fallback
     return NextResponse.json(getFallbackResponse(userMessage, isAuthenticated));
   } catch (error: any) {
     console.error("[encore] Error:", error);

@@ -78,14 +78,14 @@ export async function PUT(req: NextRequest) {
     if (socialLinks !== undefined) userUpdate.socialLinks = socialLinks;
     if (driveLinked !== undefined) userUpdate.driveLinked = driveLinked;
     if (driveLinkedAt !== undefined) userUpdate.driveLinkedAt = driveLinkedAt;
-    await db.collection("users").doc(uid).update(userUpdate);
+    await db.collection("users").doc(uid).set(userUpdate, { merge: true });
 
     // Update creators collection
     const creatorUpdate: Record<string, any> = { updatedAt: now };
     if (displayName !== undefined) creatorUpdate.displayName = displayName;
     if (bio !== undefined) creatorUpdate.bio = bio;
     if (avatarUrl !== undefined) creatorUpdate.avatarUrl = avatarUrl;
-    await db.collection("creators").doc(uid).update(creatorUpdate);
+    await db.collection("creators").doc(uid).set(creatorUpdate, { merge: true });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

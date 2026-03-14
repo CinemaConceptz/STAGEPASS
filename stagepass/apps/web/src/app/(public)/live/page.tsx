@@ -7,7 +7,7 @@ import LiveChat from "@/components/stagepass/LiveChat";
 import ContentCard from "@/components/stagepass/ContentCard";
 import FollowButton from "@/components/stagepass/FollowButton";
 import Button from "@/components/ui/Button";
-import { Video, Users } from "lucide-react";
+import { Video, Users, Radio } from "lucide-react";
 import Link from "next/link";
 
 export default function LivePage() {
@@ -16,54 +16,101 @@ export default function LivePage() {
   const [selected, setSelected] = useState<any | null>(null);
   const [prevId, setPrevId] = useState<string | null>(null);
 
+  // Derive whether the current user is actively streaming
+  const userActiveChannel = user ? channels.find((c: any) => c.ownerUid === user.uid) : null;
+  const isUserLive = !!userActiveChannel;
+
   const fetchChannels = useCallback(async () => {
     try {
-      // Use server-side API (Admin SDK) — bypasses Firestore security rules + no index needed
       const res = await fetch("/api/live/channels");
       const data = await res.json();
       const ch: any[] = data.channels || [];
       setChannels(ch);
       setSelected((prev: any) => {
-        if (prev && ch.find((c: any) => c.id === prev.id)) return prev; // keep selection
+        if (prev && ch.find((c: any) => c.id === prev.id)) return prev;
         return ch.length > 0 ? ch[0] : null;
       });
     } catch { /* silent */ }
   }, []);
 
-  // Initial load + poll every 8 seconds for new/ended streams
   useEffect(() => {
     fetchChannels();
     const interval = setInterval(fetchChannels, 8000);
     return () => clearInterval(interval);
   }, [fetchChannels]);
 
-  // Track listener count on selection change
   useEffect(() => {
     if (!selected?.id || selected.id === prevId) return;
-    if (prevId) fetch(`/api/live/channels`); // refresh on switch
+    if (prevId) fetch(`/api/live/channels`);
     setPrevId(selected?.id || null);
   }, [selected?.id]);
 
+  // Go Live / End Stream button — green when not live, red when live
+  const GoLiveButton = () => isUserLive ? (
+    <button
+      onClick={async () => {
+        if (!user || !userActiveChannel) return;
+        try {
+          const token = await user.getIdToken();
+          await fetch("/api/live/activate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ channelId: userActiveChannel.id, action: "END" }),
+          });
+          await fetchChannels();
+        } catch { /* silent */ }
+      }}
+      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition-colors"
+      data-testid="end-live-btn"
+    >
+      <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+      LIVE — End Stream
+    </button>
+  ) : (
+    <Link href="/studio/live">
+      <Button
+        variant="primary"
+        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+        data-testid="go-live-btn"
+      >
+        Go Live
+      </Button>
+    </Link>
+  );
 
   return (
     <div className="space-y-8" data-testid="live-page">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl sm:text-3xl font-bold" data-testid="live-heading">Live Now</h1>
-        <Link href="/studio/live">
-          <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="go-live-btn">
-            Go Live
-          </Button>
-        </Link>
+        {user && <GoLiveButton />}
+        {!user && (
+          <Link href="/signup">
+            <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="go-live-signup-btn">
+              Go Live
+            </Button>
+          </Link>
+        )}
       </div>
 
       {channels.length === 0 ? (
         <div className="text-center py-24 space-y-4" data-testid="live-empty">
-          <Video size={48} className="mx-auto text-stage-mutetext" />
-          <p className="text-stage-mutetext text-lg">No live streams right now.</p>
-          <Link href="/studio/live">
-            <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700" data-testid="live-empty-cta">Be the first to go live</Button>
-          </Link>
-          <Link href="/explore" className="block mt-4">
+          <Radio size={48} className="mx-auto text-stage-mutetext" />
+          <p className="text-stage-mutetext text-lg">No live streams happening right now.</p>
+          <p className="text-stage-mutetext text-sm">Be the first to go live — your audience is waiting.</p>
+          {user ? (
+            <Link href="/studio/live">
+              <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700" data-testid="live-empty-cta">
+                Start Broadcasting
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/signup">
+              <Button variant="primary" className="bg-emerald-600 hover:bg-emerald-700" data-testid="live-empty-cta">
+                Sign Up &amp; Go Live
+              </Button>
+            </Link>
+          )}
+          <Link href="/explore" className="block mt-2">
             <Button variant="secondary" data-testid="live-explore-btn">Browse Previously Recorded</Button>
           </Link>
         </div>
@@ -116,7 +163,7 @@ export default function LivePage() {
 
           {channels.length > 1 && (
             <>
-              <h2 className="text-xl font-bold">All Streams</h2>
+              <h2 className="text-xl font-bold">All Live Streams</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {channels.map((ch) => (
                   <button key={ch.id} onClick={() => setSelected(ch)} className={`text-left rounded-xl transition-all ${selected?.id === ch.id ? "ring-2 ring-stage-mint" : ""}`}>

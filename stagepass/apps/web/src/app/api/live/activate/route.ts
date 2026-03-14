@@ -15,12 +15,26 @@ export async function POST(req: NextRequest) {
     const decoded = await getAuth(adminApp).verifyIdToken(token);
     const uid = decoded.uid;
 
-    const { channelId, title, playbackUrl } = await req.json();
-    if (!channelId || !playbackUrl) {
-      return NextResponse.json({ error: "channelId and playbackUrl required" }, { status: 400 });
+    const { channelId, title, playbackUrl, action } = await req.json();
+    if (!channelId) {
+      return NextResponse.json({ error: "channelId required" }, { status: 400 });
     }
 
     const db = getFirestore(adminApp);
+
+    // Handle stream end
+    if (action === "END") {
+      await db.collection("liveChannels").doc(channelId).set({
+        status: "ENDED",
+        endedAt: new Date().toISOString(),
+      }, { merge: true });
+      return NextResponse.json({ success: true, status: "ENDED" });
+    }
+
+    if (!playbackUrl) {
+      return NextResponse.json({ error: "playbackUrl required for activation" }, { status: 400 });
+    }
+
     await db.collection("liveChannels").doc(channelId).set({
       channelId,
       ownerUid: uid,

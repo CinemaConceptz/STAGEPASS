@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, ChevronDown, Loader, Radio, Video, Upload } from "lucide-react";
+import { Sparkles, Send, ChevronDown, Loader, Radio, Video, Upload, Minus, GripHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Message {
@@ -23,9 +23,16 @@ export default function ButlerDock() {
   const { user } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Drag state
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const dragging = useRef(false);
+  const startPos = useRef({ x: 0, y: 0, mx: 0, my: 0 });
+  const dockRef = useRef<HTMLDivElement>(null);
 
   const greeting = user
     ? `I'm Encore, What are we premiering today?`
@@ -46,6 +53,7 @@ export default function ButlerDock() {
           text: text.trim(),
           isAuthenticated: !!user,
           userName: user?.displayName || null,
+          history: messages.slice(-6).map(m => ({ role: m.role, text: m.text })),
         }),
       });
       const data = await res.json();
@@ -57,7 +65,6 @@ export default function ButlerDock() {
       };
       setMessages(prev => [...prev, assistantMsg]);
 
-      // Execute navigation actions
       if (data.action === "NAVIGATE" && data.target) {
         setTimeout(() => router.push(data.target), 800);
       } else if (data.action === "GO_LIVE") {
@@ -84,10 +91,40 @@ export default function ButlerDock() {
     }
   };
 
+  // Drag handlers
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("button, input, textarea")) return;
+    dragging.current = true;
+    startPos.current = { x: pos.x, y: pos.y, mx: e.clientX, my: e.clientY };
+    e.preventDefault();
+  }, [pos]);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging.current) return;
+      const dx = e.clientX - startPos.current.mx;
+      const dy = e.clientY - startPos.current.my;
+      setPos({ x: startPos.current.x + dx, y: startPos.current.y + dy });
+    };
+    const onMouseUp = () => { dragging.current = false; };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => { window.removeEventListener("mousemove", onMouseMove); window.removeEventListener("mouseup", onMouseUp); };
+  }, []);
+
+  const style = pos.x !== 0 || pos.y !== 0
+    ? { transform: `translate(${pos.x}px, ${pos.y}px)` }
+    : {};
+
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3" data-testid="butler-dock">
+    <div
+      ref={dockRef}
+      className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 select-none"
+      style={style}
+      data-testid="butler-dock"
+    >
       <AnimatePresence>
-        {open && (
+        {open && !minimized && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -95,25 +132,32 @@ export default function ButlerDock() {
             className="w-[340px] sm:w-[380px] max-h-[70vh] bg-stage-panel border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
             data-testid="butler-panel"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20">
+            {/* Header — drag handle */}
+            <div
+              className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/20 cursor-grab active:cursor-grabbing"
+              onMouseDown={onMouseDown}
+            >
               <div className="flex items-center gap-2">
+                <GripHorizontal size={14} className="text-white/30" />
                 <Sparkles size={16} className="text-stage-mint" />
                 <span className="text-sm font-bold tracking-wider">ENCORE</span>
               </div>
-              <button onClick={() => setOpen(false)} className="text-stage-mutetext hover:text-white">
-                <ChevronDown size={18} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setMinimized(true)} className="text-stage-mutetext hover:text-white p-1" title="Minimize" data-testid="butler-minimize">
+                  <Minus size={16} />
+                </button>
+                <button onClick={() => setOpen(false)} className="text-stage-mutetext hover:text-white p-1" data-testid="butler-close">
+                  <ChevronDown size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px] max-h-[50vh]">
-              {/* Greeting */}
               <div className="text-sm text-white/90 bg-white/5 rounded-xl p-3">
                 {greeting}
               </div>
 
-              {/* Quick Actions (show when no messages yet) */}
               {messages.length === 0 && (
                 <div className="space-y-2">
                   {user ? (
@@ -157,7 +201,6 @@ export default function ButlerDock() {
                 </div>
               )}
 
-              {/* Message history */}
               {messages.map((msg, i) => (
                 <div key={i} className={`text-sm ${msg.role === "user" ? "text-right" : ""}`}>
                   <div
@@ -206,11 +249,14 @@ export default function ButlerDock() {
       <motion.button
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setOpen(!open)}
-        className="h-14 w-14 rounded-full bg-stage-indigo text-white flex items-center justify-center shadow-lg shadow-stage-indigo/30 border border-white/10"
+        onClick={() => { setOpen(!open); setMinimized(false); }}
+        className="h-14 w-14 rounded-full bg-stage-indigo text-white flex items-center justify-center shadow-lg shadow-stage-indigo/30 border border-white/10 relative"
         data-testid="butler-toggle"
       >
         <Sparkles size={22} />
+        {minimized && (
+          <span className="absolute -top-1 -right-1 h-4 w-4 bg-stage-mint rounded-full border-2 border-stage-bg" />
+        )}
       </motion.button>
     </div>
   );

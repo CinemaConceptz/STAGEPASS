@@ -61,7 +61,7 @@ export default function RadioPage() {
       if (!data.success || !data.nowPlaying) return;
       const st = stationsRef.current.find(s => s.id === stationId);
       const slot = st?.schedule ? getActiveScheduleSlot(st.schedule) : null;
-      const np = { ...data.nowPlaying, stationName: st?.name, showName: slot?.showName, mode: slot ? "SCHEDULED" : "AUTO_DJ" };
+      const np = { ...data.nowPlaying, stationName: st?.name, showName: slot?.showName, mode: slot ? "SCHEDULED" : "AUTO_DJ", stationArtworkUrl: st?.artworkUrl || null };
       setNowPlaying(np);
       nowRef.current = np;
     } catch { /* silent */ }
@@ -147,7 +147,7 @@ export default function RadioPage() {
       if (!data.success || !data.nowPlaying) return;
       const st = stationsRef.current.find(s => s.id === id);
       const slot = st?.schedule ? getActiveScheduleSlot(st.schedule) : null;
-      const np = { ...data.nowPlaying, stationName: st?.name, showName: slot?.showName, mode: slot ? "SCHEDULED" : "AUTO_DJ" };
+      const np = { ...data.nowPlaying, stationName: st?.name, showName: slot?.showName, mode: slot ? "SCHEDULED" : "AUTO_DJ", stationArtworkUrl: st?.artworkUrl || null };
       setNowPlaying(np);
       nowRef.current = np;
       if (!resume) {
@@ -343,8 +343,16 @@ export default function RadioPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-stage-panel/95 backdrop-blur-xl border-t border-white/10 p-4 z-50 shadow-2xl" data-testid="radio-mini-player">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4 min-w-0 flex-1">
-              <div className="h-12 w-12 bg-stage-mint rounded-lg flex items-center justify-center text-black font-bold shrink-0">
-                <Music2 size={20} className="animate-pulse" />
+              <div className="h-12 w-12 rounded-lg flex items-center justify-center text-black font-bold shrink-0 overflow-hidden">
+                {nowPlaying.track?.artworkUrl ? (
+                  <img src={nowPlaying.track.artworkUrl} alt="artwork" className="w-full h-full object-cover" />
+                ) : nowPlaying.stationArtworkUrl ? (
+                  <img src={nowPlaying.stationArtworkUrl} alt="station" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-stage-mint flex items-center justify-center">
+                    <Music2 size={20} className="animate-pulse" />
+                  </div>
+                )}
               </div>
               <div className="min-w-0">
                 <p className="font-bold text-white truncate" data-testid="mini-player-track">

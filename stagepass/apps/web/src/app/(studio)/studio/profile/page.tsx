@@ -43,7 +43,8 @@ export default function ProfilePage() {
         const data = await res.json();
         if (data.success && data.profile) {
           const p = data.profile;
-          setProfile(p);
+          const c = data.creator || {};
+          setProfile({ ...p, slug: c.slug || "" });
           setDisplayName(p.displayName || user.displayName || "");
           setBio(p.bio || "");
           setAvatarUrl(p.avatarUrl || user.photoURL || "");
@@ -57,6 +58,7 @@ export default function ProfilePage() {
         } else {
           setDisplayName(user.displayName || "");
           setAvatarUrl(user.photoURL || "");
+          setProfile(null);
         }
       } catch {
         setDisplayName(user.displayName || "");
@@ -167,13 +169,25 @@ export default function ProfilePage() {
     <div className="max-w-2xl mx-auto space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold" data-testid="profile-heading">My Profile</h1>
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-2 text-sm text-stage-mutetext hover:text-red-400 transition-colors"
-          data-testid="signout-btn"
-        >
-          <LogOut size={16} /> Sign Out
-        </button>
+        <div className="flex items-center gap-3">
+          {profile?.slug && (
+            <Link
+              href={`/c/${profile.slug}`}
+              target="_blank"
+              className="flex items-center gap-1.5 text-sm text-stage-mint hover:underline"
+              data-testid="view-channel-link"
+            >
+              <ExternalLink size={14} /> View Channel
+            </Link>
+          )}
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-2 text-sm text-stage-mutetext hover:text-red-400 transition-colors"
+            data-testid="signout-btn"
+          >
+            <LogOut size={16} /> Sign Out
+          </button>
+        </div>
       </div>
 
       {/* Avatar */}

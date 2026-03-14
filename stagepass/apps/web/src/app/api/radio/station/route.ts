@@ -18,17 +18,58 @@ export async function POST(req: Request) {
     const bucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "stagepass-live-v1.firebasestorage.app";
 
     // Build track list from Drive files
-    const trackList = (tracks || []).map((t: any, i: number) => ({
-      id: `track-${i}-${Date.now()}`,
-      title: (t.driveFileName || `Track ${i + 1}`).replace(/\.[^/.]+$/, ""),
-      artist: "",
-      driveFileId: t.driveFileId,
-      mimeType: t.mimeType || "audio/mpeg",
-      url: `https://storage.googleapis.com/${bucket}/radio/${stationId}/tracks/${t.driveFileId}`,
-      driveUrl: `https://drive.google.com/uc?export=download&id=${t.driveFileId}`,
-      mood: t.mood || "",
-      durationMs: 180000, // Default 3 min, updated after processing
-    }));
+    // Try to copy each track to GCS immediately for public playback
+    const trackList: any[] = [];
+    for (let i = 0; i < (tracks || []).length; i++) {
+      const t = tracks[i];
+      const trackId = `track-${i}-${Date.now()}`;
+      const gcsPath = `radio/${stationId}/tracks/${t.driveFileId}`;
+      const gcsUrl = `https://storage.googleapis.com/${bucket}/${gcsPath}`;
+      const driveUrl = `https://drive.google.com/uc?export=download&id=${t.driveFileId}`;
+
+      let finalUrl = driveUrl; // Default fallback
+
+      // Try to copy from Drive to GCS using provided token for immediate public playback
+      if (token) {
+        try {
+          const driveRes = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${t.driveFileId}?alt=media`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          if (driveRes.ok) {
+            const contentType = driveRes.headers.get("content-type") || t.mimeType || "audio/mpeg";
+            const audioBuffer = await driveRes.arrayBuffer();
+            if (audioBuffer.byteLength > 0) {
+              const { Storage } = await import("@google-cloud/storage");
+              const storage = new Storage();
+              const fileRef = storage.bucket(bucket).file(gcsPath);
+              await fileRef.save(Buffer.from(audioBuffer), {
+                contentType,
+                metadata: { cacheControl: "public, max-age=31536000" },
+              });
+              await fileRef.makePublic();
+              finalUrl = gcsUrl;
+              console.log(`[radio/station] Copied track ${t.driveFileId} to GCS: ${gcsUrl}`);
+            }
+          }
+        } catch (gcsErr: any) {
+          console.warn(`[radio/station] GCS copy failed for ${t.driveFileId}:`, gcsErr.message);
+          // Fall back to Drive URL
+        }
+      }
+
+      trackList.push({
+        id: trackId,
+        title: (t.driveFileName || `Track ${i + 1}`).replace(/\.[^/.]+$/, ""),
+        artist: "",
+        driveFileId: t.driveFileId,
+        mimeType: t.mimeType || "audio/mpeg",
+        url: finalUrl,
+        driveUrl,
+        mood: t.mood || "",
+        durationMs: 180000,
+      });
+    }
 
     const stationData: Record<string, any> = {
       stationId,
@@ -48,7 +89,7 @@ export async function POST(req: Request) {
 
     await db.collection("radioStations").doc(stationId).set(stationData, { merge: true });
 
-    // Optionally trigger track ingestion via Pub/Sub
+    // Also try Pub/Sub for async worker processing (optional, won't block if unavailable)
     if (token && trackList.length > 0) {
       try {
         const { PubSub } = await import("@google-cloud/pubsub");

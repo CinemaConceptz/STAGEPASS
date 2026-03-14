@@ -19,6 +19,7 @@ interface DrivePickerProps {
   mode?: "video" | "audio" | "folder";
   multiselect?: boolean;
   label?: string;
+  initialToken?: string | null;
 }
 
 export default function DrivePicker({
@@ -27,9 +28,10 @@ export default function DrivePicker({
   mode = "video",
   multiselect = false,
   label,
+  initialToken = null,
 }: DrivePickerProps) {
   const [openPicker] = useDrivePicker();
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(initialToken);
   const [error, setError] = useState("");
 
   const handleConnect = async () => {
@@ -97,6 +99,9 @@ export default function DrivePicker({
         <p className="text-sm text-stage-mutetext mb-4">
           Connect your Google Drive to import your content.
         </p>
+        <p className="text-xs text-white/30 mb-3 bg-white/5 rounded-lg p-2">
+          <strong className="text-white/50">Note:</strong> Google may show an &ldquo;unverified app&rdquo; warning. Click <em>Advanced</em> &rarr; <em>Go to STAGEPASS (unsafe)</em> to continue. This is normal for apps in development &mdash; your data is safe.
+        </p>
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
         <Button variant="primary" onClick={handleConnect} data-testid="drive-connect-btn">
           Connect Google Drive
@@ -122,3 +127,4 @@ export default function DrivePicker({
     </div>
   );
 }
+
