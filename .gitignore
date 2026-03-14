@@ -192,3 +192,7 @@ stagepass/apps/web/.next/cache/webpack/server-production/2.pack
 # Environment files
 *.env
 *.env.*
+-e 
+# Environment files
+*.env
+*.env.*
