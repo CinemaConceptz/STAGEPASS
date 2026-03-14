@@ -152,8 +152,18 @@ export default function RadioPage() {
       nowRef.current = np;
       if (!resume) {
         const audio = getActive()!;
-        audio.src = data.nowPlaying.track.url;
-        audio.currentTime = data.nowPlaying.offsetMs / 1000;
+        // Resolve the audio URL — proxy Drive URLs server-side to bypass CORS
+        const rawUrl: string = data.nowPlaying.track.url || "";
+        const isDriveUrl = rawUrl.includes("drive.google.com") || rawUrl.includes("googleusercontent.com");
+        let audioUrl = rawUrl;
+        if (isDriveUrl && data.nowPlaying.track.driveFileId) {
+          const driveToken = getStoredDriveToken();
+          if (driveToken) {
+            audioUrl = `/api/radio/proxy/${data.nowPlaying.track.driveFileId}?t=${encodeURIComponent(driveToken)}`;
+          }
+        }
+        audio.src = audioUrl;
+        audio.currentTime = isDriveUrl ? 0 : (data.nowPlaying.offsetMs / 1000);
         audio.volume = 1;
         audio.muted = mutedRef.current;
         await audio.play().catch(() => {});

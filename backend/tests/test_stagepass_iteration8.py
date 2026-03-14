@@ -20,7 +20,7 @@ import requests
 import os
 import re
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://live-stream-test.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://media-pipeline-15.preview.emergentagent.com')
 
 # Source code paths
 STAGEPASS_BASE = "/app/stagepass/apps/web/src"
