@@ -48,7 +48,7 @@ Build a production-ready creator ecosystem "STAGEPASS" with:
 - Email: `firebase-adminsdk-fbsvc@stagepass-live-v1.iam.gserviceaccount.com`
 - Key: embedded in both deploy scripts
 
-## Key API Endpoints
+## Key API Endpoints (updated)
 - `/api/health` — Admin SDK connection test
 - `/api/profile` (GET/PUT) — User profile (set+merge)
 - `/api/auth/signup` (POST) — Create user+creator docs

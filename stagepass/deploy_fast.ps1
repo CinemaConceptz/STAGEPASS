@@ -56,7 +56,8 @@ $apis = @(
   "storage.googleapis.com",
   "generativelanguage.googleapis.com",
   "aiplatform.googleapis.com",
-  "firestore.googleapis.com"
+  "firestore.googleapis.com",
+  "secretmanager.googleapis.com"
 )
 gcloud services enable @apis
 
@@ -201,6 +202,29 @@ images: ['$WebImage']
 gcloud builds submit --config cloudbuild.fast.yaml .
 if ($LASTEXITCODE -ne 0) { Write-Error "[ERROR] Web build failed"; exit 1 }
 
+# ── Store Firebase private key in Secret Manager (safe, no escaping issues) ──
+Write-Host "[*] Storing Firebase private key in Secret Manager..." -ForegroundColor Yellow
+
+# Check if secret already exists; create or update accordingly
+$secretExists = gcloud secrets describe stagepass-firebase-pk --project=$PROJECT_ID 2>$null
+if ($LASTEXITCODE -eq 0) {
+  # Secret exists — add a new version
+  $FIREBASE_PRIVATE_KEY | gcloud secrets versions add stagepass-firebase-pk --data-file=- --project=$PROJECT_ID 2>&1 | Out-Null
+  Write-Host "  Updated secret stagepass-firebase-pk" -ForegroundColor DarkGray
+} else {
+  # Create new secret
+  $FIREBASE_PRIVATE_KEY | gcloud secrets create stagepass-firebase-pk --data-file=- --replication-policy=automatic --project=$PROJECT_ID 2>&1 | Out-Null
+  Write-Host "  Created secret stagepass-firebase-pk" -ForegroundColor DarkGray
+}
+
+# Grant the Compute SA permission to access the secret
+$ComputeSaNumTmp = (gcloud projects describe $PROJECT_ID --format "value(projectNumber)").Trim()
+gcloud secrets add-iam-policy-binding stagepass-firebase-pk `
+  --member="serviceAccount:$ComputeSaNumTmp-compute@developer.gserviceaccount.com" `
+  --role="roles/secretmanager.secretAccessor" `
+  --project=$PROJECT_ID 2>&1 | Out-Null
+Write-Host "  Granted secretAccessor to Compute SA" -ForegroundColor DarkGray
+
 gcloud run deploy stagepass-web `
   --image $WebImage `
   --region $REGION `
@@ -209,7 +233,7 @@ gcloud run deploy stagepass-web `
   --memory 1Gi `
   --cpu 1 `
   --set-env-vars "NEXT_PUBLIC_FIREBASE_API_KEY=$FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID=$FIREBASE_APP_ID,NEXT_PUBLIC_GOOGLE_API_KEY=$GOOGLE_API_KEY,NEXT_PUBLIC_GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID,NEXT_PUBLIC_API_URL=$ApiUrl,WORKER_SERVICE_URL=$WorkerUrl,GOOGLE_API_KEY=$GOOGLE_API_KEY,GCS_BUCKET=$FIREBASE_STORAGE_BUCKET,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,PUBSUB_TOPIC=stagepass-content-process,FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL,NEXT_PUBLIC_FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY" `
-  --update-env-vars "FIREBASE_PRIVATE_KEY=$FIREBASE_PRIVATE_KEY"
+  --set-secrets "FIREBASE_PRIVATE_KEY=stagepass-firebase-pk:latest"
 
 if ($LASTEXITCODE -ne 0) { Write-Error "[ERROR] Web deploy failed"; exit 1 }
 
