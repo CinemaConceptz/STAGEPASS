@@ -4,7 +4,7 @@ import {
   ScrollView, Alert, ActivityIndicator, Image,
 } from "react-native";
 import { signOut, updateProfile } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import { useAuth } from "../lib/AuthContext";
 import { colors, spacing } from "../lib/theme";
@@ -54,8 +54,8 @@ export default function ProfileScreen() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, "users", user.uid), { displayName, bio, avatarUrl, socialLinks, updatedAt: new Date().toISOString() });
-      await updateDoc(doc(db, "creators", user.uid), { displayName, bio, avatarUrl, updatedAt: new Date().toISOString() });
+      await setDoc(doc(db, "users", user.uid), { displayName, bio, avatarUrl, socialLinks, updatedAt: new Date().toISOString() }, { merge: true });
+      await setDoc(doc(db, "creators", user.uid), { displayName, bio, avatarUrl, updatedAt: new Date().toISOString() }, { merge: true });
       await updateProfile(user, { displayName, photoURL: avatarUrl || undefined });
       Alert.alert("Saved", "Profile updated successfully.");
     } catch (e: any) {
